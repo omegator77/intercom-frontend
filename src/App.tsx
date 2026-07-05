@@ -27,6 +27,7 @@ import { AuthProvider } from "./auth/auth-context.tsx";
 import { useAuth } from "./auth/use-auth.ts";
 import { LoginPage } from "./components/auth/login-page.tsx";
 import { InvitePage } from "./components/auth/invite-page.tsx";
+import { RequireAuth } from "./components/auth/require-auth.tsx";
 
 const DisplayBoxPositioningContainer = styled(FlexContainer)`
   justify-content: center;
@@ -144,27 +145,39 @@ const AppContent = ({
                 <Route
                   path="/"
                   element={
-                    <LandingPage setApiError={() => setApiError(true)} />
+                    <RequireAuth>
+                      <LandingPage setApiError={() => setApiError(true)} />
+                    </RequireAuth>
                   }
                   errorElement={<ErrorPage />}
                 />
                 <Route
                   path="/create-production"
-                  element={<CreateProductionPage />}
+                  element={
+                    <RequireAuth>
+                      <CreateProductionPage />
+                    </RequireAuth>
+                  }
                   errorElement={<ErrorPage />}
                 />
                 <Route
                   path="/manage-productions"
                   element={
-                    <ManageProductionsPage
-                      setApiError={() => setApiError(true)}
-                    />
+                    <RequireAuth>
+                      <ManageProductionsPage
+                        setApiError={() => setApiError(true)}
+                      />
+                    </RequireAuth>
                   }
                   errorElement={<ErrorPage />}
                 />
                 <Route
                   path="/production-calls/production/:productionId/line/:lineId"
-                  element={<CallsPage />}
+                  element={
+                    <RequireAuth>
+                      <CallsPage />
+                    </RequireAuth>
+                  }
                   errorElement={<ErrorPage />}
                 />
                 <Route
