@@ -2,6 +2,7 @@ import styled from "@emotion/styled";
 import { MicMuted, MicUnmuted } from "../../assets/icons/icon";
 import { isMobile, isTablet } from "../../bowser";
 import { PrimaryButton, SecondaryButton } from "../form-elements/form-elements";
+import { useAuth } from "../../auth/use-auth";
 import { ConnectToWSButton } from "./connect-to-ws-button";
 import { useGlobalMuteToggle } from "./use-global-mute-toggle";
 
@@ -57,6 +58,8 @@ type HeaderActionsProps = {
   setIsSettingGlobalMute: React.Dispatch<React.SetStateAction<boolean>>;
   sendCallsStateUpdate: () => void;
   resetLastSentCallsState: () => void;
+  productionId?: string | null;
+  onManageClick?: () => void;
 };
 export const HeaderActions = ({
   isEmpty,
@@ -70,14 +73,25 @@ export const HeaderActions = ({
   setIsSettingGlobalMute,
   sendCallsStateUpdate,
   resetLastSentCallsState,
+  productionId,
+  onManageClick,
 }: HeaderActionsProps) => {
   const { handleToggleGlobalMute } = useGlobalMuteToggle({
     setIsMasterInputMuted,
     setIsSettingGlobalMute,
   });
+  const { hasProductionRole } = useAuth();
+  const canManageProduction =
+    !!productionId &&
+    hasProductionRole(Number(productionId), ["admin", "producer"]);
 
   return (
     <HeaderButtons>
+      {!isEmpty && canManageProduction && onManageClick && (
+        <SecondaryButton type="button" onClick={onManageClick}>
+          Manage
+        </SecondaryButton>
+      )}
       {!isEmpty && !isMobile && !isTablet && (
         <ConnectToWSButton
           callActionHandlers={callActionHandlers}
