@@ -85,6 +85,58 @@ type TUpdateLineNameOptions = {
   name: string;
 };
 
+export type TUserRole = "admin" | "producer" | "participant";
+
+export type TPublicUser = {
+  id: string;
+  username: string;
+  displayName: string;
+  alias?: string;
+  isSuperAdmin?: boolean;
+};
+
+export type TMembership = {
+  productionId: number;
+  role: TUserRole;
+};
+
+export type TMeResponse = {
+  user: TPublicUser;
+  memberships: TMembership[];
+};
+
+type TLoginOptions = {
+  username: string;
+  password: string;
+};
+
+type TUpdateMeOptions = {
+  alias?: string;
+};
+
+type TCreateInviteOptions = {
+  productionId: number;
+  role: TUserRole;
+};
+
+export type TInviteResponse = {
+  token: string;
+  url: string;
+};
+
+export type TInviteInfoResponse = {
+  productionId: number;
+  productionName: string;
+  role: TUserRole;
+};
+
+type TAcceptInviteOptions = {
+  token: string;
+  username: string;
+  password: string;
+  displayName: string;
+};
+
 export const API = {
   createProduction: async ({ name, lines }: TCreateProductionOptions) =>
     handleFetchRequest<TBasicProductionResponse>(
@@ -292,4 +344,69 @@ export const API = {
       })
     );
   },
+
+  login: ({ username, password }: TLoginOptions): Promise<TMeResponse> =>
+    handleFetchRequest<TMeResponse>(
+      fetch(`${API_URL}auth/login`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      })
+    ),
+  logout: (): Promise<void> =>
+    handleFetchRequest<void>(
+      fetch(`${API_URL}auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      })
+    ),
+  me: (): Promise<TMeResponse> =>
+    handleFetchRequest<TMeResponse>(
+      fetch(`${API_URL}auth/me`, {
+        method: "GET",
+        credentials: "include",
+      })
+    ),
+  updateMe: ({ alias }: TUpdateMeOptions): Promise<TMeResponse> =>
+    handleFetchRequest<TMeResponse>(
+      fetch(`${API_URL}auth/me`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alias }),
+      })
+    ),
+  createInvite: ({
+    productionId,
+    role,
+  }: TCreateInviteOptions): Promise<TInviteResponse> =>
+    handleFetchRequest<TInviteResponse>(
+      fetch(`${API_URL}auth/invite`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productionId, role }),
+      })
+    ),
+  getInvite: (token: string): Promise<TInviteInfoResponse> =>
+    handleFetchRequest<TInviteInfoResponse>(
+      fetch(`${API_URL}auth/invite/${token}`, {
+        method: "GET",
+      })
+    ),
+  acceptInvite: ({
+    token,
+    username,
+    password,
+    displayName,
+  }: TAcceptInviteOptions): Promise<TMeResponse> =>
+    handleFetchRequest<TMeResponse>(
+      fetch(`${API_URL}auth/invite/${token}/accept`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, displayName }),
+      })
+    ),
 };

@@ -9,6 +9,7 @@ import { PageHeader } from "../page-layout/page-header.tsx";
 import { AddIcon, EditIcon, HeadsetIcon } from "../../assets/icons/icon.tsx";
 import { PrimaryButton } from "../form-elements/form-elements";
 import { HideOnSmallScreen } from "../generic-components";
+import { useAuth } from "../../auth/use-auth.ts";
 
 const HeaderButton = styled(PrimaryButton)`
   margin-left: 1rem;
@@ -77,6 +78,7 @@ const EmptyStateButton = styled(PrimaryButton)`
 export const ProductionsListContainer = () => {
   const [{ reloadProductionList }] = useGlobalState();
   const navigate = useNavigate();
+  const { isSuperAdmin } = useAuth();
 
   const { productions, doInitialLoad, error, setIntervalLoad } =
     useFetchProductionList({
@@ -116,10 +118,12 @@ export const ProductionsListContainer = () => {
               <HeaderButtonText>Manage</HeaderButtonText>
               <EditIcon />
             </ManageButton>
-            <HeaderButton onClick={goToCreate}>
-              <HeaderButtonText>Create</HeaderButtonText>
-              <AddIcon />
-            </HeaderButton>
+            {isSuperAdmin && (
+              <HeaderButton onClick={goToCreate}>
+                <HeaderButtonText>Create</HeaderButtonText>
+                <AddIcon />
+              </HeaderButton>
+            )}
           </HideOnSmallScreen>
         )}
       </PageHeader>
@@ -127,9 +131,11 @@ export const ProductionsListContainer = () => {
         <EmptyState>
           <HeadsetIcon />
           <EmptyStateText>No productions yet</EmptyStateText>
-          <EmptyStateButton onClick={goToCreate}>
-            Create your first production
-          </EmptyStateButton>
+          {isSuperAdmin && (
+            <EmptyStateButton onClick={goToCreate}>
+              Create your first production
+            </EmptyStateButton>
+          )}
         </EmptyState>
       )}
       {!!productions?.productions.length && (

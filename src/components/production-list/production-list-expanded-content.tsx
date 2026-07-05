@@ -20,6 +20,7 @@ import { useGlobalState } from "../../global-state/context-provider";
 import { useInitiateProductionCall } from "../../hooks/use-initiate-production-call";
 import { ConfirmationModal } from "../verify-decision/confirmation-modal";
 import { TLine } from "../production-line/types";
+import { useAuth } from "../../auth/use-auth";
 
 type ExpandedContentProps = {
   production: TBasicProductionResponse;
@@ -34,6 +35,11 @@ export const ProductionListExpandedContent = ({
 }: ExpandedContentProps) => {
   const [editNameOpen, setEditNameOpen] = useState<boolean>(false);
   const [{ userSettings }, dispatch] = useGlobalState();
+  const { hasProductionRole } = useAuth();
+  const canManageLines = hasProductionRole(Number(production.productionId), [
+    "admin",
+    "producer",
+  ]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalLineId, setModalLineId] = useState<string | null>(null);
   const [isProgramUser, setIsProgramUser] = useState<boolean>(false);
@@ -122,18 +128,20 @@ export const ProductionListExpandedContent = ({
             )}
           />
           {managementMode ? (
-            <DeleteButton
-              type="button"
-              disabled={!!l.participants.length}
-              onClick={() => setSelectedLine(l)}
-            >
-              Delete
-              {deleteLineLoading && (
-                <SpinnerWrapper>
-                  <Spinner className="production-list" />
-                </SpinnerWrapper>
-              )}
-            </DeleteButton>
+            canManageLines && (
+              <DeleteButton
+                type="button"
+                disabled={!!l.participants.length}
+                onClick={() => setSelectedLine(l)}
+              >
+                Delete
+                {deleteLineLoading && (
+                  <SpinnerWrapper>
+                    <Spinner className="production-list" />
+                  </SpinnerWrapper>
+                )}
+              </DeleteButton>
+            )
           ) : (
             <SecondaryButton
               type="button"
