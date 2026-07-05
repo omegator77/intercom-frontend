@@ -1,4 +1,4 @@
-import { CSSProperties, useState } from "react";
+import { useState } from "react";
 import styled from "@emotion/styled";
 import { API, TInviteResponse, TUserRole } from "../../api/api";
 import {
@@ -16,28 +16,26 @@ const InvitePanel = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  width: 100%;
+  /* Forces this panel onto its own line inside the wrapping button row
+     instead of squeezing between the other buttons. */
+  flex: 1 1 100%;
 `;
 
 const InviteRow = styled.div`
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   align-items: center;
 `;
 
 const InviteLinkInput = styled.input`
   flex: 1;
+  min-width: 20rem;
   font-size: 1.4rem;
   padding: 0.5rem;
 `;
 
-export const InviteButton = ({
-  productionId,
-  style,
-}: {
-  productionId: number;
-  style?: CSSProperties;
-}) => {
+export const InviteButton = ({ productionId }: { productionId: number }) => {
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState<TUserRole>("participant");
   const [invite, setInvite] = useState<TInviteResponse | null>(null);
@@ -61,11 +59,7 @@ export const InviteButton = ({
 
   if (!open) {
     return (
-      <SecondaryButton
-        style={style}
-        type="button"
-        onClick={() => setOpen(true)}
-      >
+      <SecondaryButton type="button" onClick={() => setOpen(true)}>
         Invite
       </SecondaryButton>
     );

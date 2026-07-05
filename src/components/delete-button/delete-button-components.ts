@@ -3,6 +3,8 @@ import { SecondaryButton } from "../form-elements/form-elements";
 
 export const ButtonsWrapper = styled.div`
   display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
   justify-content: flex-end;
   margin: 1rem 0 1rem 0;
 `;
