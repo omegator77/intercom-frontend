@@ -109,7 +109,7 @@ export const Header: FC = () => {
         <AccountArea>
           {me ? (
             <>
-              <span>{me.user.alias || me.user.displayName}</span>
+              <span>{me.user.username}</span>
               <button type="button" onClick={() => logout()}>
                 Log out
               </button>

@@ -4,6 +4,8 @@ import { useInitiateProductionCall } from "../../hooks/use-initiate-production-c
 import { useStorage } from "../accessing-local-storage/access-local-storage";
 import { TJoinProductionOptions, TProduction } from "../production-line/types";
 import { TUserSettings } from "../user-settings/types";
+import { useAuth } from "../../auth/use-auth";
+import { API } from "../../api/api";
 
 type FormValues = TJoinProductionOptions & {
   audiooutput: string;
@@ -39,8 +41,11 @@ export const useSubmitForm = ({
   const { initiateProductionCall } = useInitiateProductionCall({
     dispatch,
   });
+  const { me, refresh } = useAuth();
 
-  const onSubmit: SubmitHandler<FormValues | TUserSettings> = (payload) => {
+  const onSubmit: SubmitHandler<FormValues | TUserSettings> = async (
+    payload
+  ) => {
     if (isJoinProduction && "lineId" in payload) {
       const selectedLine = production?.lines.find(
         (line) => line.id === payload.lineId
@@ -71,6 +76,11 @@ export const useSubmitForm = ({
       }
 
       setJoinProductionOptions?.(options);
+    }
+
+    if (!isJoinProduction && me && "alias" in payload) {
+      await API.updateMe({ alias: payload.alias || "" });
+      await refresh();
     }
 
     if (updateUserSettings || !isJoinProduction) {

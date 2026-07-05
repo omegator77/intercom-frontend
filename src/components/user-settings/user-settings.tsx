@@ -5,6 +5,7 @@ import { UserSettingsForm } from "../user-settings-form/user-settings-form";
 import { ResponsiveFormContainer } from "../generic-components";
 import { NavigateToRootButton } from "../navigate-to-root-button/navigate-to-root-button";
 import { HeaderWrapper } from "../create-production/create-production-components";
+import { useAuth } from "../../auth/use-auth";
 
 interface UserSettingsProps {
   buttonText?: string;
@@ -29,11 +30,13 @@ export const UserSettings: FC<UserSettingsProps> = (props) => {
     hideUsername,
   } = props;
   const [{ devices, userSettings }] = useGlobalState();
+  const { me } = useAuth();
 
   const hasBackButton = showBackButton ?? !onSave;
 
   const defaultValues = {
     username: userSettings?.username,
+    alias: me?.user.alias ?? "",
     audioinput:
       userSettings?.audioinput ??
       devices.input?.find((d) => d.deviceId === "default")?.deviceId ??

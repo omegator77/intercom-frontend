@@ -26,6 +26,7 @@ import { FormItem } from "./form-item";
 import { useSubmitForm } from "./use-submit-form";
 import { useFetchProductionList } from "../landing-page/use-fetch-production-list";
 import { FirefoxWarning } from "../production-line/firefox-warning";
+import { useAuth } from "../../auth/use-auth";
 
 type FormValues = TJoinProductionOptions & {
   audiooutput: string;
@@ -105,6 +106,8 @@ export const UserSettingsForm = ({
   const selectedLineId = useWatch({ name: "lineId", control });
 
   const [{ devices, selectedProductionId }] = useGlobalState();
+  const { me } = useAuth();
+  const isLoggedIn = !!me;
 
   const { onSubmit } = useSubmitForm({
     isJoinProduction,
@@ -254,7 +257,7 @@ export const UserSettingsForm = ({
           )}
         </FormItem>
       )}
-      {!hideUsername && (
+      {!hideUsername && !isLoggedIn && (
         <FormItem label="Username" fieldName="username" errors={errors}>
           <FormInput
             // eslint-disable-next-line
@@ -263,6 +266,15 @@ export const UserSettingsForm = ({
               minLength: 1,
             })}
             placeholder="Username"
+          />
+        </FormItem>
+      )}
+      {!hideUsername && isLoggedIn && isSettingsConfig && (
+        <FormItem label="Display name" fieldName="alias" errors={errors}>
+          <FormInput
+            // eslint-disable-next-line
+            {...register(`alias`)}
+            placeholder={me.user.displayName}
           />
         </FormItem>
       )}
