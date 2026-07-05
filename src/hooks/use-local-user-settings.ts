@@ -6,11 +6,15 @@ import { useStorage } from "../components/accessing-local-storage/access-local-s
 type TUseLocalUserSettings = {
   devices: DevicesState;
   dispatch: Dispatch<TGlobalStateAction>;
+  // Logged in users always join under their account name (or alias),
+  // overriding whatever guest name was previously stored locally.
+  accountUsername?: string;
 };
 
 export const useLocalUserSettings = ({
   devices,
   dispatch,
+  accountUsername,
 }: TUseLocalUserSettings) => {
   const { readFromStorage, removeFromStorage } = useStorage();
   useEffect(() => {
@@ -32,7 +36,7 @@ export const useLocalUserSettings = ({
       if (!foundOutputDevice) removeFromStorage("audiooutput");
 
       const payload = {
-        username: readFromStorage("username") || "",
+        username: accountUsername || readFromStorage("username") || "",
         audioinput: foundInputDevice,
         audiooutput: foundOutputDevice,
       };
@@ -42,5 +46,5 @@ export const useLocalUserSettings = ({
         payload,
       });
     }
-  }, [devices, dispatch, readFromStorage, removeFromStorage]);
+  }, [devices, dispatch, readFromStorage, removeFromStorage, accountUsername]);
 };

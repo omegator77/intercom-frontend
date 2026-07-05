@@ -7,6 +7,8 @@ import {
 } from "react-hook-form";
 import { ErrorMessage } from "@hookform/error-message";
 import { useEffect, useState } from "react";
+import { Navigate } from "react-router";
+import { useAuth } from "../../auth/use-auth.ts";
 import { DisplayContainerHeader } from "../landing-page/display-container-header.tsx";
 import {
   FormInput,
@@ -44,6 +46,7 @@ import {
 
 export const CreateProductionPage = () => {
   const [, dispatch] = useGlobalState();
+  const { isSuperAdmin, loading: authLoading } = useAuth();
   const [createNewProduction, setCreateNewProduction] =
     useState<FormValues | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -167,6 +170,10 @@ export const CreateProductionPage = () => {
     const id = setTimeout(() => setShowConfirmation(false), 4000);
     return () => clearTimeout(id);
   }, [success, data?.name]);
+
+  if (!authLoading && !isSuperAdmin) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <ResponsiveFormContainer className={isMobile ? "" : "desktop"}>

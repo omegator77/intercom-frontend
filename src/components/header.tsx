@@ -7,6 +7,7 @@ import { mediaQueries } from "./generic-components.ts";
 import { useGlobalState } from "../global-state/context-provider.tsx";
 import { useAudioCue } from "./production-line/use-audio-cue.ts";
 import { ConfirmationModal } from "./verify-decision/confirmation-modal.tsx";
+import { useAuth } from "../auth/use-auth.ts";
 
 const HeaderWrapper = styled.div`
   width: 100%;
@@ -44,12 +45,32 @@ const HomeButton = styled.button`
   }
 `;
 
+const AccountArea = styled.div`
+  float: right;
+  padding: 1rem 2rem;
+  color: rgba(255, 255, 255, 0.87);
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  button {
+    background: none;
+    border: 0.1rem solid rgba(255, 255, 255, 0.4);
+    color: inherit;
+    border-radius: 0.4rem;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+  }
+`;
+
 export const Header: FC = () => {
   const [confirmExitModalOpen, setConfirmExitModalOpen] = useState(false);
   const [{ calls }, dispatch] = useGlobalState();
   const navigate = useNavigate();
   const location = useLocation();
   const { playExitSound } = useAudioCue();
+  const { me, logout } = useAuth();
   const isEmpty = Object.values(calls).length === 0;
 
   const runExitAllCalls = () => {
@@ -85,6 +106,20 @@ export const Header: FC = () => {
           <HeadsetIcon />
           Open Intercom
         </HomeButton>
+        <AccountArea>
+          {me ? (
+            <>
+              <span>{me.user.alias || me.user.displayName}</span>
+              <button type="button" onClick={() => logout()}>
+                Log out
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={() => navigate("/login")}>
+              Log in
+            </button>
+          )}
+        </AccountArea>
       </HeaderWrapper>
       {confirmExitModalOpen && (
         <ConfirmationModal

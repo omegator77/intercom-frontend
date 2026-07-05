@@ -14,6 +14,7 @@ interface UserSettingsProps {
   showBackButton?: boolean;
   onBack?: () => void;
   hideTitle?: boolean;
+  hideUsername?: boolean;
 }
 
 export const UserSettings: FC<UserSettingsProps> = (props) => {
@@ -25,6 +26,7 @@ export const UserSettings: FC<UserSettingsProps> = (props) => {
     showBackButton,
     onBack,
     hideTitle,
+    hideUsername,
   } = props;
   const [{ devices, userSettings }] = useGlobalState();
 
@@ -57,6 +59,7 @@ export const UserSettings: FC<UserSettingsProps> = (props) => {
           onSave={onSave}
           updateUserSettings
           needsConfirmation={needsConfirmation}
+          hideUsername={hideUsername}
         />
       )}
     </ResponsiveFormContainer>

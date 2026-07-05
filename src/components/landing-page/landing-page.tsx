@@ -5,10 +5,12 @@ import { UserSettings } from "../user-settings/user-settings.tsx";
 import { UserSettingsButton } from "./user-settings-button.tsx";
 import { TUserSettings } from "../user-settings/types.ts";
 import { isMobile } from "../../bowser.ts";
+import { useAuth } from "../../auth/use-auth.ts";
 
 export const LandingPage = ({ setApiError }: { setApiError: () => void }) => {
   const [{ apiError, userSettings }] = useGlobalState();
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const { me } = useAuth();
 
   useEffect(() => {
     if (apiError) {
@@ -33,6 +35,7 @@ export const LandingPage = ({ setApiError }: { setApiError: () => void }) => {
           onSave={() => setShowSettings(false)}
           showBackButton={showSettings}
           onBack={() => setShowSettings(false)}
+          hideUsername={!!me}
         />
       )) || (
         <>

@@ -31,6 +31,8 @@ import {
   SpinnerWrapper,
 } from "../delete-button/delete-button-components";
 import { useHasDuplicateLineName } from "../../hooks/use-has-duplicate-line-name.ts";
+import { useAuth } from "../../auth/use-auth";
+import { InviteButton } from "./invite-button";
 
 const LineConfirmation = styled.div`
   background: #91fa8c;
@@ -58,6 +60,11 @@ export const ManageProductionButtons: FC<ManageProductionButtonsProps> = (
   props
 ) => {
   const { production, isDeleteProductionDisabled } = props;
+
+  const { hasProductionRole } = useAuth();
+  const productionId = Number(production.productionId);
+  const canManageLines = hasProductionRole(productionId, ["admin", "producer"]);
+  const canDeleteProduction = hasProductionRole(productionId, ["admin"]);
 
   const [, dispatch] = useGlobalState();
   const [removeProductionId, setRemoveProductionId] = useState<string>("");
@@ -224,7 +231,7 @@ export const ManageProductionButtons: FC<ManageProductionButtonsProps> = (
         </LineConfirmation>
       )}
       <ButtonsWrapper>
-        {!addLineOpen && (
+        {canManageLines && !addLineOpen && (
           <SecondaryButton
             style={{ marginRight: "1rem" }}
             type="button"
@@ -233,18 +240,26 @@ export const ManageProductionButtons: FC<ManageProductionButtonsProps> = (
             Add Line
           </SecondaryButton>
         )}
-        <DeleteButton
-          type="button"
-          disabled={isDeleteProductionDisabled}
-          onClick={() => setDisplayConfirmationModal(true)}
-        >
-          Delete Production
-          {deleteProductionLoading && (
-            <SpinnerWrapper>
-              <Spinner className="production-list" />
-            </SpinnerWrapper>
-          )}
-        </DeleteButton>
+        {canManageLines && (
+          <InviteButton
+            productionId={productionId}
+            style={{ marginRight: "1rem" }}
+          />
+        )}
+        {canDeleteProduction && (
+          <DeleteButton
+            type="button"
+            disabled={isDeleteProductionDisabled}
+            onClick={() => setDisplayConfirmationModal(true)}
+          >
+            Delete Production
+            {deleteProductionLoading && (
+              <SpinnerWrapper>
+                <Spinner className="production-list" />
+              </SpinnerWrapper>
+            )}
+          </DeleteButton>
+        )}
       </ButtonsWrapper>
       {displayConfirmationModal && (
         <ConfirmationModal

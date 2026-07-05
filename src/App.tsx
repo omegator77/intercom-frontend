@@ -23,6 +23,10 @@ import { ManageProductionsPage } from "./components/manage-productions-page/mana
 import { CreateProductionPage } from "./components/create-production/create-production-page.tsx";
 import { useSetupTokenRefresh } from "./hooks/use-reauth.tsx";
 import { TUserSettings } from "./components/user-settings/types";
+import { AuthProvider } from "./auth/auth-context.tsx";
+import { useAuth } from "./auth/use-auth.ts";
+import { LoginPage } from "./components/auth/login-page.tsx";
+import { InvitePage } from "./components/auth/invite-page.tsx";
 
 const DisplayBoxPositioningContainer = styled(FlexContainer)`
   justify-content: center;
@@ -163,6 +167,16 @@ const AppContent = ({
                   element={<CallsPage />}
                   errorElement={<ErrorPage />}
                 />
+                <Route
+                  path="/login"
+                  element={<LoginPage />}
+                  errorElement={<ErrorPage />}
+                />
+                <Route
+                  path="/invite/:token"
+                  element={<InvitePage />}
+                  errorElement={<ErrorPage />}
+                />
                 <Route path="*" element={<NotFound />} />
               </>
             </Routes>
@@ -173,20 +187,25 @@ const AppContent = ({
   );
 };
 
-const App = () => {
+const AppRoot = () => {
   const [unsupportedContinue, setUnsupportedContinue] = useState(false);
   const continueToApp = isValidBrowser || unsupportedContinue;
   const { denied, permission } = useDevicePermissions({ continueToApp });
   const initializedGlobalState = useInitializeGlobalStateReducer();
   const [{ devices, userSettings }, dispatch] = initializedGlobalState;
   const [apiError, setApiError] = useState(false);
+  const { me } = useAuth();
 
   useFetchDevices({
     dispatch,
     permission,
   });
 
-  useLocalUserSettings({ devices, dispatch });
+  useLocalUserSettings({
+    devices,
+    dispatch,
+    accountUsername: me?.user.alias || me?.user.displayName,
+  });
 
   return (
     <GlobalStateContext.Provider value={initializedGlobalState}>
@@ -202,5 +221,11 @@ const App = () => {
     </GlobalStateContext.Provider>
   );
 };
+
+const App = () => (
+  <AuthProvider>
+    <AppRoot />
+  </AuthProvider>
+);
 
 export default App;
