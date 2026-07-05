@@ -33,6 +33,7 @@ import {
 import { useHasDuplicateLineName } from "../../hooks/use-has-duplicate-line-name.ts";
 import { useAuth } from "../../auth/use-auth";
 import { InviteButton } from "./invite-button";
+import { MembersPanel } from "./members-panel";
 
 const LineConfirmation = styled.div`
   background: #91fa8c;
@@ -242,6 +243,12 @@ export const ManageProductionButtons: FC<ManageProductionButtonsProps> = (
         )}
         {canManageLines && (
           <InviteButton
+            productionId={productionId}
+            style={{ marginRight: "1rem" }}
+          />
+        )}
+        {canDeleteProduction && (
+          <MembersPanel
             productionId={productionId}
             style={{ marginRight: "1rem" }}
           />

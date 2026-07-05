@@ -52,9 +52,9 @@ export const useFetchProductionList = (filter?: GetProductionListFilter) => {
 
           const { status } = e as Error & { status?: number };
           if (status === 401) {
-            API.reauth().catch(() => {
-              // Reauth failed — next interval poll will retry
-            });
+            // Session expired/invalid — send back to login instead of
+            // showing a generic API error.
+            window.location.assign("/login");
             return;
           }
 
