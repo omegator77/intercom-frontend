@@ -4,7 +4,9 @@ import { createPortal } from "react-dom";
 import { GenerateWhipWhepUrlModal } from "../generate-urls/generate-whip-whep-url-modal";
 import { ShareLineLinkModal } from "../generate-urls/share-line-link/share-line-link-modal";
 import { useShareUrl } from "../../hooks/use-share-url";
+import { useAuth } from "../../auth/use-auth";
 import { TBasicProductionResponse } from "../../api/api";
+import { ManageProductionModal } from "../calls-page/manage-production-modal";
 import { TLine } from "./types";
 
 const MenuWrapper = styled.div`
@@ -86,14 +88,19 @@ export const KebabMenu = ({
   onOpenHotkeys,
 }: KebabMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeModal, setActiveModal] = useState<"whip-whep" | "share" | null>(
-    null
-  );
+  const [activeModal, setActiveModal] = useState<
+    "whip-whep" | "share" | "manage" | null
+  >(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { shareUrl, url } = useShareUrl();
+  const { hasProductionRole } = useAuth();
+  const canManageProduction = hasProductionRole(Number(productionId), [
+    "admin",
+    "producer",
+  ]);
 
   const openMenu = useCallback(() => {
     if (buttonRef.current) {
@@ -203,6 +210,18 @@ export const KebabMenu = ({
             >
               WebRTC
             </DropdownItem>
+            {canManageProduction && (
+              <DropdownItem
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setActiveModal("manage");
+                  setIsOpen(false);
+                }}
+              >
+                Manage Production
+              </DropdownItem>
+            )}
           </DropdownMenu>,
           document.body
         )}
@@ -217,6 +236,12 @@ export const KebabMenu = ({
         <ShareLineLinkModal
           urls={[url]}
           onRefresh={handleShareRefresh}
+          onClose={() => setActiveModal(null)}
+        />
+      )}
+      {activeModal === "manage" && (
+        <ManageProductionModal
+          productionId={productionId}
           onClose={() => setActiveModal(null)}
         />
       )}

@@ -12,7 +12,6 @@ import { useGlobalHotkeys } from "../production-line/use-line-hotkeys";
 import { UserSettings } from "../user-settings/user-settings";
 import { ConfirmationModal } from "../verify-decision/confirmation-modal";
 import { HeaderActions } from "./header-actions";
-import { ManageProductionModal } from "./manage-production-modal";
 import { ProductionLines } from "./production-lines";
 import { useCallsNavigation } from "./use-calls-navigation";
 import { useGlobalMuteHotkey } from "./use-global-mute-hotkey";
@@ -63,12 +62,10 @@ export const CallsPage = () => {
     numberOfCalls: Object.values(calls).length,
   });
   const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [showManage, setShowManage] = useState<boolean>(false);
   const [isSettingGlobalMute, setIsSettingGlobalMute] =
     useState<boolean>(false);
 
   const { productionId: paramProductionId, lineId: paramLineId } = useParams();
-  const activeProductionId = productionId ?? paramProductionId ?? null;
 
   const navigate = useCallsNavigation({
     isEmpty: Object.values(calls).length === 0,
@@ -184,13 +181,6 @@ export const CallsPage = () => {
           </Modal>
         )}
 
-        {showManage && activeProductionId && (
-          <ManageProductionModal
-            productionId={activeProductionId}
-            onClose={() => setShowManage(false)}
-          />
-        )}
-
         <HeaderActions
           setIsSettingGlobalMute={setIsSettingGlobalMute}
           isEmpty={isEmpty}
@@ -203,8 +193,6 @@ export const CallsPage = () => {
           callActionHandlers={callActionHandlers}
           sendCallsStateUpdate={sendCallsStateUpdate}
           resetLastSentCallsState={resetLastSentCallsState}
-          productionId={activeProductionId}
-          onManageClick={() => setShowManage(true)}
         />
       </PageHeader>
       <Container>
