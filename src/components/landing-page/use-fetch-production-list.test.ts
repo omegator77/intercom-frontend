@@ -11,12 +11,10 @@ import { API } from "../../api/api.ts";
 vi.mock("../../api/api.ts", () => ({
   API: {
     listProductions: vi.fn(),
-    reauth: vi.fn(),
   },
 }));
 
 const mockListProductions = API.listProductions as ReturnType<typeof vi.fn>;
-const mockReauth = API.reauth as ReturnType<typeof vi.fn>;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -61,14 +59,18 @@ function makeGenericError(): Error {
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe("useFetchProductionList", () => {
+  let assignSpy: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    mockReauth.mockResolvedValue(undefined);
+    assignSpy = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign: assignSpy });
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   // ── Happy path ─────────────────────────────────────────────────────────────
@@ -154,7 +156,7 @@ describe("useFetchProductionList", () => {
   // ── 401 error handling ─────────────────────────────────────────────────────
 
   describe("401 error handling (regression: polling must not flood on 401)", () => {
-    it("calls API.reauth on a 401 error", async () => {
+    it("redirects to /login on a 401 error", async () => {
       mockListProductions.mockRejectedValue(make401Error());
 
       renderHook(
@@ -166,7 +168,7 @@ describe("useFetchProductionList", () => {
         await Promise.resolve();
       });
 
-      expect(mockReauth).toHaveBeenCalledTimes(1);
+      expect(assignSpy).toHaveBeenCalledWith("/login");
     });
 
     it("does NOT dispatch API_NOT_AVAILABLE on a 401 error", async () => {
@@ -299,7 +301,7 @@ describe("useFetchProductionList", () => {
       expect(result.current.error).toBeInstanceOf(Error);
     });
 
-    it("does NOT call API.reauth on a non-401 error", async () => {
+    it("does NOT redirect to /login on a non-401 error", async () => {
       mockListProductions.mockRejectedValue(makeGenericError());
 
       renderHook(
@@ -311,7 +313,7 @@ describe("useFetchProductionList", () => {
         await Promise.resolve();
       });
 
-      expect(mockReauth).not.toHaveBeenCalled();
+      expect(assignSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -413,7 +415,7 @@ describe("useFetchProductionList", () => {
       expect(mockListProductions).toHaveBeenCalledTimes(11);
     });
 
-    it("reauth is called once per 401, not repeatedly within the same tick", async () => {
+    it("redirects to /login once per 401, not repeatedly within the same tick", async () => {
       mockListProductions.mockRejectedValue(make401Error());
 
       const { result } = renderHook(
@@ -421,13 +423,13 @@ describe("useFetchProductionList", () => {
         { wrapper }
       );
 
-      // Initial load → 1 fetch → 1 reauth call
+      // Initial load → 1 fetch → 1 redirect
       await act(async () => {
         await Promise.resolve();
       });
-      expect(mockReauth).toHaveBeenCalledTimes(1);
+      expect(assignSpy).toHaveBeenCalledTimes(1);
 
-      // 3 more interval ticks → 3 more reauth calls (one per tick, not cascading)
+      // 3 more interval ticks → 3 more redirects (one per tick, not cascading)
       await act(async () => {
         result.current.setIntervalLoad(true);
         await Promise.resolve();
@@ -441,7 +443,7 @@ describe("useFetchProductionList", () => {
         await Promise.resolve();
       });
 
-      expect(mockReauth).toHaveBeenCalledTimes(4);
+      expect(assignSpy).toHaveBeenCalledTimes(4);
     });
   });
 });

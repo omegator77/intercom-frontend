@@ -137,6 +137,29 @@ type TAcceptInviteOptions = {
   displayName: string;
 };
 
+export type TMemberInfo = {
+  userId: string;
+  username: string;
+  displayName: string;
+  alias?: string;
+  role: TUserRole;
+};
+
+export type TMembersListResponse = {
+  members: TMemberInfo[];
+};
+
+type TUpdateMemberRoleOptions = {
+  productionId: number;
+  userId: string;
+  role: TUserRole;
+};
+
+type TRemoveMemberOptions = {
+  productionId: number;
+  userId: string;
+};
+
 export const API = {
   createProduction: async ({ name, lines }: TCreateProductionOptions) =>
     handleFetchRequest<TBasicProductionResponse>(
@@ -334,17 +357,6 @@ export const API = {
       })
     );
   },
-  reauth: async (): Promise<void> => {
-    return handleFetchRequest<void>(
-      fetch(`${API_URL}reauth`, {
-        method: "GET",
-        headers: {
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
-        },
-      })
-    );
-  },
-
   login: ({ username, password }: TLoginOptions): Promise<TMeResponse> =>
     handleFetchRequest<TMeResponse>(
       fetch(`${API_URL}auth/login`, {
@@ -407,6 +419,36 @@ export const API = {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, displayName }),
+      })
+    ),
+  getMembers: (productionId: number): Promise<TMembersListResponse> =>
+    handleFetchRequest<TMembersListResponse>(
+      fetch(`${API_URL}production/${productionId}/members`, {
+        method: "GET",
+        credentials: "include",
+      })
+    ),
+  updateMemberRole: ({
+    productionId,
+    userId,
+    role,
+  }: TUpdateMemberRoleOptions): Promise<TMemberInfo> =>
+    handleFetchRequest<TMemberInfo>(
+      fetch(`${API_URL}production/${productionId}/members/${userId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      })
+    ),
+  removeMember: ({
+    productionId,
+    userId,
+  }: TRemoveMemberOptions): Promise<string> =>
+    handleFetchRequest<string>(
+      fetch(`${API_URL}production/${productionId}/members/${userId}`, {
+        method: "DELETE",
+        credentials: "include",
       })
     ),
 };

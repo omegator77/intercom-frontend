@@ -1,5 +1,5 @@
 import styled from "@emotion/styled";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router";
 import { ErrorPage } from "./components/router-error.tsx";
 import { useDevicePermissions } from "./hooks/use-device-permission.ts";
@@ -21,7 +21,6 @@ import { Header } from "./components/header.tsx";
 import { useLocalUserSettings } from "./hooks/use-local-user-settings.ts";
 import { ManageProductionsPage } from "./components/manage-productions-page/manage-productions-page.tsx";
 import { CreateProductionPage } from "./components/create-production/create-production-page.tsx";
-import { useSetupTokenRefresh } from "./hooks/use-reauth.tsx";
 import { TUserSettings } from "./components/user-settings/types";
 import { AuthProvider } from "./auth/auth-context.tsx";
 import { useAuth } from "./auth/use-auth.ts";
@@ -72,13 +71,6 @@ const AppContent = ({
   setUnsupportedContinue,
   setApiError,
 }: AppContentProps) => {
-  const { setupTokenRefresh } = useSetupTokenRefresh();
-
-  useEffect(() => {
-    const cleanup = setupTokenRefresh();
-    return () => cleanup();
-  }, [setupTokenRefresh]);
-
   return (
     <BrowserRouter>
       <Header />
