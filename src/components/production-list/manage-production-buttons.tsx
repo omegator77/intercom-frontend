@@ -233,26 +233,12 @@ export const ManageProductionButtons: FC<ManageProductionButtonsProps> = (
       )}
       <ButtonsWrapper>
         {canManageLines && !addLineOpen && (
-          <SecondaryButton
-            style={{ marginRight: "1rem" }}
-            type="button"
-            onClick={handleAddLineOpen}
-          >
+          <SecondaryButton type="button" onClick={handleAddLineOpen}>
             Add Line
           </SecondaryButton>
         )}
-        {canManageLines && (
-          <InviteButton
-            productionId={productionId}
-            style={{ marginRight: "1rem" }}
-          />
-        )}
-        {canDeleteProduction && (
-          <MembersPanel
-            productionId={productionId}
-            style={{ marginRight: "1rem" }}
-          />
-        )}
+        {canManageLines && <InviteButton productionId={productionId} />}
+        {canDeleteProduction && <MembersPanel productionId={productionId} />}
         {canDeleteProduction && (
           <DeleteButton
             type="button"

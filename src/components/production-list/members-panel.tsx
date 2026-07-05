@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "@emotion/styled";
 import { API, TMemberInfo, TUserRole } from "../../api/api";
 import {
@@ -17,30 +17,27 @@ const Panel = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  width: 100%;
+  /* Forces this panel onto its own line inside the wrapping button row
+     instead of squeezing between the other buttons. */
+  flex: 1 1 100%;
 `;
 
 const MemberRow = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
 `;
 
 const MemberName = styled.span`
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: 12rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
-export const MembersPanel = ({
-  productionId,
-  style,
-}: {
-  productionId: number;
-  style?: CSSProperties;
-}) => {
+export const MembersPanel = ({ productionId }: { productionId: number }) => {
   const [open, setOpen] = useState(false);
   const [members, setMembers] = useState<TMemberInfo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -86,11 +83,7 @@ export const MembersPanel = ({
 
   if (!open) {
     return (
-      <SecondaryButton
-        style={style}
-        type="button"
-        onClick={() => setOpen(true)}
-      >
+      <SecondaryButton type="button" onClick={() => setOpen(true)}>
         Members
       </SecondaryButton>
     );
