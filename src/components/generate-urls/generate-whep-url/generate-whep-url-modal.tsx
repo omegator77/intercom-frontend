@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { API } from "../../../api/api";
 import { generateWhepUrl } from "../../../utils/generateWhepUrl";
 import { CopyButton } from "../../copy-button/copy-button";
 import { DecorativeLabel } from "../../form-elements/form-elements";
@@ -30,6 +31,22 @@ export const GenerateWhepUrlModal = ({
   const [username, setUsername] = useState("");
   const [whepUrl, setWhepUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [whepAuthKey, setWhepAuthKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    API.getWhepAuthKey(Number(productionId))
+      .then((res) => {
+        if (!cancelled) setWhepAuthKey(res.whepAuthKey);
+      })
+      .catch(() => {
+        // Not fatal - the URL itself still works when no key is required,
+        // and members without admin/producer rights simply won't see one.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [productionId]);
 
   const generateUrl = useCallback(() => {
     if (username.trim()) {
@@ -100,6 +117,35 @@ export const GenerateWhepUrlModal = ({
             />
           </InputWrapper>
         </Wrapper>
+
+        {whepAuthKey && (
+          <Wrapper>
+            <InputWrapper>
+              <LinkLabel>
+                <DecorativeLabel>WHEP Auth Key</DecorativeLabel>
+                <CombinedInputWrapper>
+                  <input
+                    aria-label="WHEP auth key"
+                    value={whepAuthKey}
+                    readOnly
+                  />
+                </CombinedInputWrapper>
+              </LinkLabel>
+              <CopyButton
+                urls={[whepAuthKey]}
+                className="share-line-link-modal"
+              />
+            </InputWrapper>
+            <ModalNoteWrapper>
+              <ModalTextBold>Note:</ModalTextBold>
+              <ModalTextItalic>
+                This server requires this key as a Bearer token
+                (&quot;Authorization: Bearer &lt;key&gt;&quot;) to connect via
+                WHEP - enter it in your WHEP client&apos;s auth/token field.
+              </ModalTextItalic>
+            </ModalNoteWrapper>
+          </Wrapper>
+        )}
 
         <RefreshButton
           label="Refresh URL"
