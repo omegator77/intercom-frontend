@@ -160,6 +160,10 @@ type TRemoveMemberOptions = {
   userId: string;
 };
 
+export type TWhepAuthKeyResponse = {
+  whepAuthKey: string | null;
+};
+
 export const API = {
   createProduction: async ({ name, lines }: TCreateProductionOptions) =>
     handleFetchRequest<TBasicProductionResponse>(
@@ -448,6 +452,13 @@ export const API = {
     handleFetchRequest<string>(
       fetch(`${API_URL}production/${productionId}/members/${userId}`, {
         method: "DELETE",
+        credentials: "include",
+      })
+    ),
+  getWhepAuthKey: (productionId: number): Promise<TWhepAuthKeyResponse> =>
+    handleFetchRequest<TWhepAuthKeyResponse>(
+      fetch(`${API_URL}production/${productionId}/whep-auth-key`, {
+        method: "GET",
         credentials: "include",
       })
     ),
