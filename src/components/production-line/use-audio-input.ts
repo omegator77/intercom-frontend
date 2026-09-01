@@ -27,7 +27,12 @@ export const useAudioInput: TUseAudioInput = ({ audioInputId, dispatch }) => {
     if (audioInputId === "no-device") return setAudioInput("no-device");
 
     // First request a generic audio stream to "reset" permissions
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(() => {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((resetStream) => {
+      // Release it immediately - it was only needed to trigger the permission
+      // reset, and leaving it open holds the device (blocking other calls in
+      // this tab from opening the same physical device).
+      resetStream.getTracks().forEach((t) => t.stop());
+
       // Then request the specific audio input the user has selected
       navigator.mediaDevices
         .getUserMedia({
