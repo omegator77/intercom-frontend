@@ -161,7 +161,13 @@ export const UserSettingsForm = ({
         shouldValidate: true,
       });
     }
-  }, [defaultValues, setValue]);
+    // `productions` must stay a dependency: the productionId <select> below
+    // (and its `required` rule) only mounts/registers once `productions`
+    // has loaded, so revalidation has to be re-triggered at that point too -
+    // otherwise this only ever validates against an as-yet-unregistered
+    // field, and the Join button stays stuck until the user manually
+    // touches the dropdown (which fires a real change event).
+  }, [defaultValues, setValue, productions]);
 
   useEffect(() => {
     if (defaultValues && "productionId" in defaultValues && productions) {
