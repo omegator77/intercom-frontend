@@ -140,16 +140,18 @@ export const UserSettingsForm = ({
   // first call in this window has joined, `selectedProductionId`) resolve.
   // This used to be two separate reset() calls in two separate effects
   // (one for productionId via selectedProductionId, one for lineId via
-  // production) - empirically that let them race and stomp on each other:
-  // resetOptions.keepDirtyValues means a reset() call that only mentions
-  // ONE of the two fields resets the OTHER back to its useForm() default,
-  // so the second effect's reset() was silently wiping out whatever the
-  // first one had just set. A single reset() naming both fields together
-  // avoids that. trigger() is still needed afterward because reset() alone
-  // does not reliably recompute formState.isValid under keepErrors
-  // (empirically verified: errors stays {} but isValid can stay stuck at
-  // false indefinitely) - previously only a manual dropdown touch (a real
-  // change event) forced that recomputation.
+  // production) - empirically, reset() with a partial object drops every
+  // OTHER non-dirty field entirely (confirmed: audioinput/audiooutput
+  // vanished from getValues() after either reset() ran, even though
+  // neither call ever mentioned them), so the two effects were wiping out
+  // not just each other's field but the device selections too. Spreading
+  // getValues() into the reset() payload keeps every field the user
+  // already has (device selections included) and only overrides
+  // productionId/lineId. trigger() is still needed afterward because
+  // reset() alone does not reliably recompute formState.isValid under
+  // keepErrors (empirically verified: errors stays {} but isValid can stay
+  // stuck at false indefinitely) - previously only a manual dropdown touch
+  // (a real change event) forced that recomputation.
   useEffect(() => {
     // Don't run this hook if we have pre-selected values - those are
     // handled by the defaultValues-driven effect below instead.
@@ -160,13 +162,13 @@ export const UserSettingsForm = ({
       : undefined;
 
     if (!production) {
-      reset({ productionId: nextProductionId, lineId: "" });
+      reset({ ...getValues(), productionId: nextProductionId, lineId: "" });
       return;
     }
 
     const lineId = production.lines[0]?.id?.toString() || undefined;
 
-    reset({ productionId: nextProductionId, lineId });
+    reset({ ...getValues(), productionId: nextProductionId, lineId });
     trigger(["productionId", "lineId"]);
   }, [
     preSelected,
@@ -175,6 +177,7 @@ export const UserSettingsForm = ({
     isJoinProduction,
     trigger,
     selectedProductionId,
+    getValues,
   ]);
 
   // Handles the pre-selected (shared-link) join case, where productionId
