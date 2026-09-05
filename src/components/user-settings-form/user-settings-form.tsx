@@ -88,6 +88,7 @@ export const UserSettingsForm = ({
     reset,
     setValue,
     getValues,
+    trigger,
     control,
   } = useForm<FormValues | TUserSettings>({
     defaultValues,
@@ -135,27 +136,54 @@ export const UserSettingsForm = ({
     }
   }, [production, selectedLineId, isJoinProduction]);
 
-  // Update selected line id when a new production is fetched
+  // Keep productionId and lineId in sync as `production` (and, once the
+  // first call in this window has joined, `selectedProductionId`) resolve.
+  // This used to be two separate reset() calls in two separate effects
+  // (one for productionId via selectedProductionId, one for lineId via
+  // production) - empirically that let them race and stomp on each other:
+  // resetOptions.keepDirtyValues means a reset() call that only mentions
+  // ONE of the two fields resets the OTHER back to its useForm() default,
+  // so the second effect's reset() was silently wiping out whatever the
+  // first one had just set. A single reset() naming both fields together
+  // avoids that. trigger() is still needed afterward because reset() alone
+  // does not reliably recompute formState.isValid under keepErrors
+  // (empirically verified: errors stays {} but isValid can stay stuck at
+  // false indefinitely) - previously only a manual dropdown touch (a real
+  // change event) forced that recomputation.
   useEffect(() => {
-    // Don't run this hook if we have pre-selected values
+    // Don't run this hook if we have pre-selected values - those are
+    // handled by the defaultValues-driven effect below instead.
     if (preSelected || !isJoinProduction) return;
 
-    if (!production) {
-      reset({
-        lineId: "",
-      });
+    const nextProductionId = selectedProductionId
+      ? `${selectedProductionId}`
+      : undefined;
 
+    if (!production) {
+      reset({ productionId: nextProductionId, lineId: "" });
       return;
     }
 
     const lineId = production.lines[0]?.id?.toString() || undefined;
 
-    reset({
-      lineId,
-    });
-  }, [preSelected, production, reset, isJoinProduction]);
+    reset({ productionId: nextProductionId, lineId });
+    trigger(["productionId", "lineId"]);
+  }, [
+    preSelected,
+    production,
+    reset,
+    isJoinProduction,
+    trigger,
+    selectedProductionId,
+  ]);
 
+  // Handles the pre-selected (shared-link) join case, where productionId
+  // comes from defaultValues rather than from selectedProductionId/global
+  // state - kept separate so a leftover selectedProductionId from an
+  // earlier call in this window can never override a shared link's target
+  // production.
   useEffect(() => {
+    if (!preSelected) return;
     if (defaultValues && "productionId" in defaultValues) {
       setValue("productionId", defaultValues.productionId, {
         shouldValidate: true,
@@ -167,7 +195,7 @@ export const UserSettingsForm = ({
     // otherwise this only ever validates against an as-yet-unregistered
     // field, and the Join button stays stuck until the user manually
     // touches the dropdown (which fires a real change event).
-  }, [defaultValues, setValue, productions]);
+  }, [preSelected, defaultValues, setValue, productions]);
 
   useEffect(() => {
     if (defaultValues && "productionId" in defaultValues && productions) {
@@ -216,15 +244,6 @@ export const UserSettingsForm = ({
       }
     }
   }, [devices, setValue, getValues]);
-
-  // If user selects a production from the productionlist
-  useEffect(() => {
-    if (selectedProductionId && isJoinProduction) {
-      reset({
-        productionId: `${selectedProductionId}`,
-      });
-    }
-  }, [reset, selectedProductionId, isJoinProduction]);
 
   useSubmitOnEnter<FormValues | TUserSettings>({
     handleSubmit,
