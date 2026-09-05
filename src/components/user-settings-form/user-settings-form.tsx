@@ -87,6 +87,7 @@ export const UserSettingsForm = ({
     handleSubmit,
     reset,
     setValue,
+    getValues,
     control,
   } = useForm<FormValues | TUserSettings>({
     defaultValues,
@@ -170,12 +171,43 @@ export const UserSettingsForm = ({
     }
   }, [defaultValues, productions]);
 
-  // If the device no longer exists set field values to default
+  // Keep the tracked form value in sync with the enumerated devices list.
+  // The device <select> elements are uncontrolled (no `value` prop), so once
+  // devices arrive asynchronously the DOM can silently show a real device
+  // while react-hook-form's tracked value is still the initial "no-device"
+  // placeholder. Join then submits that stale value, which fails the
+  // freshly re-enumerated devices check - most visible on Firefox, where
+  // device labels resolve slower than Chromium, and only "fixed" by the
+  // user touching the dropdown (which fires a native change event).
   useEffect(() => {
     if (!devices.input?.length) {
       setValue("audioinput", "no-device", { shouldValidate: true });
+    } else {
+      const currentAudioInput = getValues("audioinput");
+      if (
+        !devices.input.some(
+          (device) => device.deviceId === currentAudioInput
+        )
+      ) {
+        setValue("audioinput", devices.input[0].deviceId, {
+          shouldValidate: true,
+        });
+      }
     }
-  }, [devices, setValue]);
+
+    if (devices.output?.length) {
+      const currentAudioOutput = getValues("audiooutput");
+      if (
+        !devices.output.some(
+          (device) => device.deviceId === currentAudioOutput
+        )
+      ) {
+        setValue("audiooutput", devices.output[0].deviceId, {
+          shouldValidate: true,
+        });
+      }
+    }
+  }, [devices, setValue, getValues]);
 
   // If user selects a production from the productionlist
   useEffect(() => {
@@ -201,7 +233,10 @@ export const UserSettingsForm = ({
         <FormItem label="Production Name" errors={errors}>
           <FormSelect
             // eslint-disable-next-line
-            {...register(`productionId`)}
+            {...register(`productionId`, {
+              required: "Production is required",
+              minLength: 1,
+            })}
             onChange={(ev) => {
               setProduction(
                 productions?.productions.find(

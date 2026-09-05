@@ -3,6 +3,11 @@ import { renderHook } from "@testing-library/react";
 import { useLocalUserSettings } from "./use-local-user-settings.ts";
 import { DevicesState } from "../global-state/types.ts";
 
+const otherWindowDevices: DevicesState = {
+  input: [{ deviceId: "mic-2", label: "Mic 2" } as MediaDeviceInfo],
+  output: null,
+};
+
 const mockReadFromStorage = vi.fn();
 const mockRemoveFromStorage = vi.fn();
 
@@ -56,6 +61,44 @@ describe("useLocalUserSettings", () => {
       expect.objectContaining({
         type: "UPDATE_USER_SETTINGS",
         payload: expect.objectContaining({ username: "Alice" }),
+      })
+    );
+  });
+
+  it("does not re-read audioinput/audiooutput from storage once already loaded, so a device saved in another window doesn't bleed in later", () => {
+    mockReadFromStorage.mockImplementation((key: string) => {
+      if (key === "username") return "guest-name";
+      if (key === "audioinput") return "mic-1";
+      return null;
+    });
+
+    const dispatch = vi.fn();
+    const { rerender } = renderHook(
+      ({ devices }) => useLocalUserSettings({ devices, dispatch }),
+      { initialProps: { devices } }
+    );
+
+    expect(dispatch).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        type: "UPDATE_USER_SETTINGS",
+        payload: expect.objectContaining({ audioinput: "mic-1" }),
+      })
+    );
+
+    // Simulate another browser window writing a different device to the
+    // shared localStorage key, then this window's device list refreshing
+    // for an unrelated reason (e.g. "Add Call", "reload devices").
+    mockReadFromStorage.mockImplementation((key: string) => {
+      if (key === "username") return "guest-name";
+      if (key === "audioinput") return "mic-2";
+      return null;
+    });
+    rerender({ devices: otherWindowDevices });
+
+    expect(dispatch).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        type: "UPDATE_USER_SETTINGS",
+        payload: expect.objectContaining({ audioinput: "mic-1" }),
       })
     );
   });
