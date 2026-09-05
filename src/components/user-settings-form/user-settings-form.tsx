@@ -157,7 +157,9 @@ export const UserSettingsForm = ({
 
   useEffect(() => {
     if (defaultValues && "productionId" in defaultValues) {
-      setValue("productionId", defaultValues.productionId);
+      setValue("productionId", defaultValues.productionId, {
+        shouldValidate: true,
+      });
     }
   }, [defaultValues, setValue]);
 
