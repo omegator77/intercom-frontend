@@ -22,6 +22,8 @@ const ModalContent = styled.div`
   box-shadow: 0 0.2rem 2rem rgba(123, 123, 123, 0.1);
   width: 90%;
   max-width: 45rem;
+  max-height: 90vh;
+  overflow-y: auto;
   animation: slideIn 0.3s ease-out;
 `;
 
