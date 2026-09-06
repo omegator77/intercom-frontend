@@ -48,47 +48,6 @@ LOGGER LEVELS
 <img alt="Manage productions" src="https://github.com/user-attachments/assets/528306ed-d94f-47da-8f60-0cddf89b97cd" />
 <img alt="Active calls" src="https://github.com/user-attachments/assets/73b0be7c-1c70-4516-8c3c-8fde1b68c3c6" />
 
-### Open Intercom Server in Open Source Cloud
-
-To develop using a server hosted by [Open Source Cloud](https://www.osaas.io/), you need to provide a bearer token (service access token) in the Authorization header. The environment should be set to:
-
-```
-export VITE_BACKEND_URL=https://<instance>.eyevinn-intercom-manager.auto.prod.osaas.io/
-export OSC_ACCESS_TOKEN=<personal-access-token>
-```
-
-The `<personal-access-token>` is found in the settings menu in the [user interface](https://app.osaas.io). To get the service access token you run the following command in your terminal.
-
-```bash
-% npx -y @osaas/cli service-access-token eyevinn-intercom-manager
-<service-access-token>
-```
-
-If you are developing against an intercom manager in OSC dev environment you use the `<personal-access-token>` that you have in the development environment and run the following instead.
-
-```bash
-% npx -y @osaas/cli --env dev service-access-token eyevinn-intercom-manager
-<service-access-token>
-```
-
-You also need to update the `VITE_BACKEND_URL` to point to your instance in OSC dev.
-
-```bash
-export VITE_BACKEND_URL=https://<instance>.eyevinn-intercom-manager.auto.dev.osaas.io/
-```
-
-Then you start the dev server with the `VITE_BACKEND_API_KEY` environment variable set. Either on the comand line or stored in the shell with `export VITE_BACKEND_API_KEY=<service-access-token>`. The token expires after a while so you might need to refresh the token using the same command above.
-
-```bash
-% VITE_BACKEND_API_KEY=<service-access-token> npm run dev
-```
-
-As the Open Source Cloud platform apply same-origin principle you need to disable that check in your browser when developing locally. Example below on how to start Chrome on MacOS with this check disabled.
-
-```bash
-% open -a Google\ Chrome --args --disable-web-security --user-data-dir="/tmp"
-```
-
 ## Docker Container
 
 Build local Docker image

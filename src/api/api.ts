@@ -1,10 +1,7 @@
 import { handleFetchRequest } from "./handle-fetch-request.ts";
 
 const API_VERSION = import.meta.env.VITE_BACKEND_API_VERSION ?? "api/v1/";
-const API_URL =
-  `${import.meta.env.VITE_BACKEND_URL.replace(/\/+$/, "")}/${API_VERSION}` ||
-  `${window.location.origin}/${API_VERSION}`;
-const API_KEY = import.meta.env.VITE_BACKEND_API_KEY;
+const API_URL = `${(import.meta.env.VITE_BACKEND_URL ?? window.location.origin).replace(/\/+$/, "")}/${API_VERSION}`;
 
 type TCreateProductionOptions = {
   name: string;
@@ -169,9 +166,9 @@ export const API = {
     handleFetchRequest<TBasicProductionResponse>(
       fetch(`${API_URL}production/`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
         },
         body: JSON.stringify({
           name,
@@ -186,9 +183,9 @@ export const API = {
     handleFetchRequest<TBasicProductionResponse>(
       fetch(`${API_URL}production/${productionId}`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
         },
         body: JSON.stringify({
           name,
@@ -203,9 +200,9 @@ export const API = {
     handleFetchRequest<TBasicProductionResponse>(
       fetch(`${API_URL}production/${productionId}/line/${lineId}`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
         },
         body: JSON.stringify({
           name,
@@ -220,45 +217,35 @@ export const API = {
     handleFetchRequest<TListProductionsResponse>(
       fetch(`${API_URL}productionlist?${searchParams}`, {
         method: "GET",
-        headers: {
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
-        },
+        credentials: "include",
       })
     ),
   fetchProduction: (id: number): Promise<TBasicProductionResponse> =>
     handleFetchRequest<TBasicProductionResponse>(
       fetch(`${API_URL}production/${id}`, {
         method: "GET",
-        headers: {
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
-        },
+        credentials: "include",
       })
     ),
   deleteProduction: (id: string): Promise<string> =>
     handleFetchRequest<string>(
       fetch(`${API_URL}production/${id}`, {
         method: "DELETE",
-        headers: {
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
-        },
+        credentials: "include",
       })
     ),
   listProductionLines: (id: number) =>
     handleFetchRequest<TLine[]>(
       fetch(`${API_URL}production/${id}/line`, {
         method: "GET",
-        headers: {
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
-        },
+        credentials: "include",
       })
     ),
   fetchProductionLine: (productionId: number, lineId: number): Promise<TLine> =>
     handleFetchRequest<TLine>(
       fetch(`${API_URL}production/${productionId}/line/${lineId}`, {
         method: "GET",
-        headers: {
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
-        },
+        credentials: "include",
       })
     ),
   addProductionLine: (
@@ -269,9 +256,9 @@ export const API = {
     handleFetchRequest<TLine>(
       fetch(`${API_URL}production/${productionId}/line`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
         },
         body: JSON.stringify({
           name,
@@ -286,9 +273,7 @@ export const API = {
     handleFetchRequest<string>(
       fetch(`${API_URL}production/${productionId}/line/${lineId}`, {
         method: "DELETE",
-        headers: {
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
-        },
+        credentials: "include",
       })
     ),
 
@@ -300,9 +285,9 @@ export const API = {
     handleFetchRequest<TOfferAudioSessionResponse>(
       fetch(`${API_URL}session/`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
         },
         body: JSON.stringify({
           productionId,
@@ -318,9 +303,9 @@ export const API = {
     handleFetchRequest<TPatchAudioSessionResponse>(
       fetch(`${API_URL}session/${sessionId}`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
         },
         body: JSON.stringify({
           sdpAnswer,
@@ -333,27 +318,23 @@ export const API = {
     handleFetchRequest<string>(
       fetch(`${API_URL}session/${sessionId}`, {
         method: "DELETE",
-        headers: {
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
-        },
+        credentials: "include",
       })
     ),
   heartbeat: ({ sessionId }: THeartbeatOptions): Promise<string> =>
     handleFetchRequest<string>(
       fetch(`${API_URL}heartbeat/${sessionId}`, {
         method: "GET",
-        headers: {
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
-        },
+        credentials: "include",
       })
     ),
   shareUrl: ({ path }: TShareUrlOptions): Promise<TShareUrlResponse> => {
     return handleFetchRequest<TShareUrlResponse>(
       fetch(`${API_URL}share`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
         },
         body: JSON.stringify({
           path,

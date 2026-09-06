@@ -21,6 +21,11 @@ export const useAudioInput: TUseAudioInput = ({ audioInputId, dispatch }) => {
 
   useEffect(() => {
     let aborted = false;
+    // Tracks the stream actually handed to this effect instance, so the
+    // cleanup below can release it even though `audioInput` state isn't a
+    // dependency here (adding it would re-run this whole effect on every
+    // stream change).
+    let activeStream: MediaStream | null = null;
 
     if (!audioInputId) return noop;
 
@@ -44,7 +49,15 @@ export const useAudioInput: TUseAudioInput = ({ audioInputId, dispatch }) => {
           },
         })
         .then((stream) => {
-          if (aborted) return;
+          if (aborted) {
+            // The hook was torn down (unmount, or audioInputId/dispatch
+            // changed) while this request was in flight - release the
+            // device instead of leaving it held with nothing referencing it.
+            stream.getTracks().forEach((t) => t.stop());
+            return;
+          }
+
+          activeStream = stream;
 
           // Default to muted input
           stream.getTracks().forEach((t) => {
@@ -67,6 +80,9 @@ export const useAudioInput: TUseAudioInput = ({ audioInputId, dispatch }) => {
 
     return () => {
       aborted = true;
+      if (activeStream) {
+        activeStream.getTracks().forEach((t) => t.stop());
+      }
     };
   }, [audioInputId, dispatch]);
 

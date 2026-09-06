@@ -13,7 +13,10 @@ export const useDevicePermissions = ({
 
     navigator.mediaDevices
       .getUserMedia({ audio: true, video: false })
-      .then(() => {
+      .then((stream) => {
+        // Only needed to check permission - release the device immediately
+        // instead of holding it open for the lifetime of the mount.
+        stream.getTracks().forEach((t) => t.stop());
         setDenied(false);
         setPermission(true);
       })
