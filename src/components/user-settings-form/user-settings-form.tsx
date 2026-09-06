@@ -1,5 +1,5 @@
 import styled from "@emotion/styled";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { isBrowserFirefox, isBrowserSafari } from "../../bowser";
 import { useGlobalState } from "../../global-state/context-provider";
@@ -107,9 +107,29 @@ export const UserSettingsForm = ({
   // this will update whenever lineId changes
   const selectedLineId = useWatch({ name: "lineId", control });
 
-  const [{ devices, selectedProductionId }] = useGlobalState();
+  const [{ devices, selectedProductionId, calls }] = useGlobalState();
   const { me } = useAuth();
   const isLoggedIn = !!me;
+
+  // Don't offer a line the user already has an active call on for this
+  // production - joining it again isn't useful and just clutters the list.
+  const joinedLineIds = useMemo(() => {
+    if (!production) return new Set<string>();
+    return new Set(
+      Object.values(calls)
+        .filter(
+          (call) =>
+            call.joinProductionOptions?.productionId === production.productionId
+        )
+        .map((call) => call.joinProductionOptions?.lineId)
+        .filter((lineId): lineId is string => !!lineId)
+    );
+  }, [calls, production]);
+
+  const availableLines = useMemo(
+    () => production?.lines.filter((line) => !joinedLineIds.has(line.id.toString())) ?? [],
+    [production, joinedLineIds]
+  );
 
   const { onSubmit } = useSubmitForm({
     isJoinProduction,
@@ -166,13 +186,14 @@ export const UserSettingsForm = ({
       return;
     }
 
-    const lineId = production.lines[0]?.id?.toString() || undefined;
+    const lineId = availableLines[0]?.id?.toString() || undefined;
 
     reset({ ...getValues(), productionId: nextProductionId, lineId });
     trigger(["productionId", "lineId"]);
   }, [
     preSelected,
     production,
+    availableLines,
     reset,
     isJoinProduction,
     trigger,
@@ -309,7 +330,7 @@ export const UserSettingsForm = ({
             }}
           >
             {production &&
-              production.lines.map((line) => (
+              availableLines.map((line) => (
                 <option key={line.id} value={line.id}>
                   {line.name || line.id}
                 </option>
@@ -318,6 +339,11 @@ export const UserSettingsForm = ({
           {!production && (
             <StyledWarningMessage>
               Please enter a production id
+            </StyledWarningMessage>
+          )}
+          {production && availableLines.length === 0 && (
+            <StyledWarningMessage>
+              You have already joined every line in this production
             </StyledWarningMessage>
           )}
         </FormItem>
