@@ -69,6 +69,7 @@ export const VolumeSlider: FC<TVolumeSliderProps> = ({
           <SliderThumb position={thumbPosition} />
           <input
             id="volumeSlider"
+            aria-label="Volume"
             type="range"
             min={0}
             max={1}

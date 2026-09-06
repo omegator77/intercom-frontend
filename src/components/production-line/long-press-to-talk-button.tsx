@@ -43,6 +43,7 @@ export const LongPressToTalkButton = ({
     <Button
       className={`${isMobile ? "mobile" : ""} ${isTalking ? "active-btn" : ""}`}
       type="button"
+      aria-pressed={isTalking}
       onPointerDown={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -51,6 +52,19 @@ export const LongPressToTalkButton = ({
       onPointerUp={(e) => {
         e.preventDefault();
         e.stopPropagation();
+        onStopTalking?.();
+      }}
+      onKeyDown={(e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        // Ignore OS key-repeat while the key is held, same as a pointer
+        // press only fires once until released.
+        if (e.repeat) return;
+        onStartTalking?.();
+      }}
+      onKeyUp={(e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
         onStopTalking?.();
       }}
     >
