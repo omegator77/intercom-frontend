@@ -6,6 +6,7 @@ import { TJoinProductionOptions, TProduction } from "../production-line/types";
 import { TUserSettings } from "../user-settings/types";
 import { useAuth } from "../../auth/use-auth";
 import { API } from "../../api/api";
+import logger from "../../utils/logger";
 
 type FormValues = TJoinProductionOptions & {
   audiooutput: string;
@@ -79,8 +80,21 @@ export const useSubmitForm = ({
     }
 
     if (!isJoinProduction && me && "alias" in payload) {
-      await API.updateMe({ alias: payload.alias || "" });
-      await refresh();
+      // Failing to update the display name must never block saving the
+      // audio device selection below - they're independent settings, but
+      // used to share one un-guarded await chain, so a failed alias update
+      // (e.g. a transient auth/network hiccup) silently stopped the user
+      // from ever getting past the device-selection screen.
+      try {
+        await API.updateMe({ alias: payload.alias || "" });
+        await refresh();
+      } catch (err) {
+        logger.red(
+          `Failed to update display name: ${
+            err instanceof Error ? err.message : err
+          }`
+        );
+      }
     }
 
     if (updateUserSettings || !isJoinProduction) {
