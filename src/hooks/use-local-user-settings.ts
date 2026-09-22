@@ -36,8 +36,20 @@ export const useLocalUserSettings = ({
   }>({});
 
   useEffect(() => {
+    const username = accountUsername || readFromStorage("username") || "";
+
     if (!audioSettingsLoaded.current) {
-      if (!(devices.input || devices.output)) return;
+      if (!(devices.input || devices.output)) {
+        // Devices haven't loaded yet - most commonly because mic permission
+        // hasn't been granted (or was denied/dismissed) yet. That must not
+        // block the username from resolving too: a logged-in user has no
+        // way to enter it manually (the field is hidden), so leaving this
+        // dispatch unreached left them stuck on the device-selection screen
+        // forever with no way out, even after answering the permission
+        // prompt via the device settings form's own "no device" fallback.
+        dispatch({ type: "UPDATE_USER_SETTINGS", payload: { username } });
+        return;
+      }
 
       audioSettingsLoaded.current = true;
 
@@ -66,7 +78,7 @@ export const useLocalUserSettings = ({
     dispatch({
       type: "UPDATE_USER_SETTINGS",
       payload: {
-        username: accountUsername || readFromStorage("username") || "",
+        username,
         ...loadedAudioSettings.current,
       },
     });

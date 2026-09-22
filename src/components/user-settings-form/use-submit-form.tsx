@@ -98,14 +98,20 @@ export const useSubmitForm = ({
     }
 
     if (updateUserSettings || !isJoinProduction) {
+      // The username field is hidden (and never registered with the form)
+      // for a logged-in user, since it's fixed by their account - relying
+      // on the raw form payload for it here meant a settings-only save
+      // could silently drop the username entirely, undoing what
+      // useLocalUserSettings had already resolved. Falling back to the
+      // already-known username keeps it intact either way.
       const newUserSettings: TUserSettings = {
-        username: payload.username,
+        username: payload.username || userSettings?.username || "",
         audioinput: payload.audioinput,
         audiooutput: payload.audiooutput,
       };
 
-      if (payload.username) {
-        writeToStorage("username", payload.username);
+      if (newUserSettings.username) {
+        writeToStorage("username", newUserSettings.username);
       }
 
       if (payload.audioinput) {
@@ -118,7 +124,7 @@ export const useSubmitForm = ({
 
       dispatch({
         type: "UPDATE_USER_SETTINGS",
-        payload: isJoinProduction ? newUserSettings : payload,
+        payload: newUserSettings,
       });
     }
 

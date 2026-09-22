@@ -65,6 +65,24 @@ describe("useLocalUserSettings", () => {
     );
   });
 
+  it("resolves the username even when devices never load (e.g. mic permission denied)", () => {
+    const dispatch = vi.fn();
+    const noDevices: DevicesState = { input: null, output: null };
+
+    renderHook(() =>
+      useLocalUserSettings({
+        devices: noDevices,
+        dispatch,
+        accountUsername: "Alice",
+      })
+    );
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "UPDATE_USER_SETTINGS",
+      payload: { username: "Alice" },
+    });
+  });
+
   it("does not re-read audioinput/audiooutput from storage once already loaded, so a device saved in another window doesn't bleed in later", () => {
     mockReadFromStorage.mockImplementation((key: string) => {
       if (key === "username") return "guest-name";
