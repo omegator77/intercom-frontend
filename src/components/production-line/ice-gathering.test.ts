@@ -74,18 +74,18 @@ describe("waitForIceGathering", () => {
     );
   });
 
-  it("uses default 5-second timeout", async () => {
+  it("uses default 12-second timeout", async () => {
     const pc = new MockRTCPeerConnection();
     pc.iceGatheringState = "gathering";
 
     const promise = waitForIceGathering(pc as unknown as RTCPeerConnection);
 
-    // At 4.9s, should not have rejected yet
-    vi.advanceTimersByTime(4900);
+    // At 11.9s, should not have rejected yet
+    vi.advanceTimersByTime(11900);
 
-    // At 5s, should reject
+    // At 12s, should reject
     vi.advanceTimersByTime(100);
 
-    await expect(promise).rejects.toThrow("waited 5 seconds");
+    await expect(promise).rejects.toThrow("waited 12 seconds");
   });
 });

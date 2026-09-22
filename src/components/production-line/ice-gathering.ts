@@ -3,7 +3,11 @@
  * Extracted from use-rtc-connection.ts lines 208-230.
  */
 
-const DEFAULT_ICE_TIMEOUT_MS = 5000;
+// 5s was too tight in practice - Firefox routinely takes longer than
+// Chromium to reach "complete" (its mDNS host-candidate privacy feature
+// adds gathering time), and this is a purely app-imposed cutoff, not a
+// browser or protocol limit.
+const DEFAULT_ICE_TIMEOUT_MS = 12000;
 
 export const waitForIceGathering = (
   rtcPeerConnection: RTCPeerConnection,
