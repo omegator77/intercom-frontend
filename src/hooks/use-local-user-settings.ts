@@ -2,6 +2,7 @@ import { Dispatch, useEffect, useRef } from "react";
 import { DevicesState } from "../global-state/types";
 import { TGlobalStateAction } from "../global-state/global-state-actions";
 import { useStorage } from "../components/accessing-local-storage/access-local-storage";
+import { TUserSettings } from "../components/user-settings/types";
 
 type TUseLocalUserSettings = {
   devices: DevicesState;
@@ -9,12 +10,17 @@ type TUseLocalUserSettings = {
   // Logged in users always join under their account name (or alias),
   // overriding whatever guest name was previously stored locally.
   accountUsername?: string;
+  // Current settings, read back so a later run of this effect (e.g. once
+  // accountUsername resolves) can preserve a device the user has since
+  // chosen and saved via the settings form, instead of overwriting it.
+  userSettings: TUserSettings | null;
 };
 
 export const useLocalUserSettings = ({
   devices,
   dispatch,
   accountUsername,
+  userSettings,
 }: TUseLocalUserSettings) => {
   const { readFromStorage, removeFromStorage } = useStorage();
 
@@ -47,7 +53,9 @@ export const useLocalUserSettings = ({
         // dispatch unreached left them stuck on the device-selection screen
         // forever with no way out, even after answering the permission
         // prompt via the device settings form's own "no device" fallback.
-        dispatch({ type: "UPDATE_USER_SETTINGS", payload: { username } });
+        if (username !== userSettings?.username) {
+          dispatch({ type: "UPDATE_USER_SETTINGS", payload: { username } });
+        }
         return;
       }
 
@@ -73,14 +81,42 @@ export const useLocalUserSettings = ({
         audioinput: foundInputDevice,
         audiooutput: foundOutputDevice,
       };
+
+      dispatch({
+        type: "UPDATE_USER_SETTINGS",
+        payload: {
+          username,
+          ...loadedAudioSettings.current,
+        },
+      });
+      return;
     }
 
-    dispatch({
-      type: "UPDATE_USER_SETTINGS",
-      payload: {
-        username,
-        ...loadedAudioSettings.current,
-      },
-    });
-  }, [devices, dispatch, readFromStorage, removeFromStorage, accountUsername]);
+    // The one-time restore above already ran. From here on, only react to
+    // the username actually changing (e.g. once accountUsername resolves,
+    // or a later alias update) - and when it does, carry over whatever
+    // device is *currently* saved rather than replaying the
+    // loadedAudioSettings snapshot frozen at the original restore. That
+    // snapshot is stale the moment the user manually picks and saves a
+    // different device via the settings form; blindly re-dispatching it
+    // silently wiped out their choice and bounced them back to the
+    // device-selection screen right after it briefly succeeded.
+    if (username !== userSettings?.username) {
+      dispatch({
+        type: "UPDATE_USER_SETTINGS",
+        payload: {
+          username,
+          audioinput: userSettings?.audioinput,
+          audiooutput: userSettings?.audiooutput,
+        },
+      });
+    }
+  }, [
+    devices,
+    dispatch,
+    readFromStorage,
+    removeFromStorage,
+    accountUsername,
+    userSettings,
+  ]);
 };

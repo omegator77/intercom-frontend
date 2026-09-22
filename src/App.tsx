@@ -220,6 +220,7 @@ const AppRoot = () => {
     devices,
     dispatch,
     accountUsername: me?.user.alias || me?.user.displayName,
+    userSettings,
   });
 
   return (
