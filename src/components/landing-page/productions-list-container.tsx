@@ -6,7 +6,12 @@ import { useRefreshAnimation } from "./use-refresh-animation.ts";
 import { useFetchProductionList } from "./use-fetch-production-list.ts";
 import { ProductionsList } from "../production-list/productions-list.tsx";
 import { PageHeader } from "../page-layout/page-header.tsx";
-import { AddIcon, EditIcon, HeadsetIcon } from "../../assets/icons/icon.tsx";
+import {
+  AddIcon,
+  EditIcon,
+  HeadsetIcon,
+  UserIcon,
+} from "../../assets/icons/icon.tsx";
 import { PrimaryButton } from "../form-elements/form-elements";
 import { HideOnSmallScreen } from "../generic-components";
 import { useAuth } from "../../auth/use-auth.ts";
@@ -109,23 +114,33 @@ export const ProductionsListContainer = () => {
     navigate("/manage-productions");
   };
 
+  const goToUsers = () => {
+    navigate("/manage-users");
+  };
+
   return (
     <>
       <PageHeader title="Productions" loading={showRefreshing}>
-        {!!productions?.productions.length && (
-          <HideOnSmallScreen>
+        <HideOnSmallScreen>
+          {!!productions?.productions.length && (
             <ManageButton onClick={goToManage}>
               <HeaderButtonText>Manage</HeaderButtonText>
               <EditIcon />
             </ManageButton>
-            {isSuperAdmin && (
-              <HeaderButton onClick={goToCreate}>
-                <HeaderButtonText>Create</HeaderButtonText>
-                <AddIcon />
-              </HeaderButton>
-            )}
-          </HideOnSmallScreen>
-        )}
+          )}
+          {isSuperAdmin && !!productions?.productions.length && (
+            <HeaderButton onClick={goToCreate}>
+              <HeaderButtonText>Create</HeaderButtonText>
+              <AddIcon />
+            </HeaderButton>
+          )}
+          {isSuperAdmin && (
+            <ManageButton onClick={goToUsers}>
+              <HeaderButtonText>Users</HeaderButtonText>
+              <UserIcon />
+            </ManageButton>
+          )}
+        </HideOnSmallScreen>
       </PageHeader>
       {productions && !productions.productions.length && (
         <EmptyState>

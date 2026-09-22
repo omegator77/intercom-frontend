@@ -21,6 +21,7 @@ import { Header } from "./components/header.tsx";
 import { useLocalUserSettings } from "./hooks/use-local-user-settings.ts";
 import { ManageProductionsPage } from "./components/manage-productions-page/manage-productions-page.tsx";
 import { CreateProductionPage } from "./components/create-production/create-production-page.tsx";
+import { ManageUsersPage } from "./components/manage-users-page/manage-users-page.tsx";
 import { TUserSettings } from "./components/user-settings/types";
 import { AuthProvider } from "./auth/auth-context.tsx";
 import { useAuth } from "./auth/use-auth.ts";
@@ -159,6 +160,15 @@ const AppContent = ({
                       <ManageProductionsPage
                         setApiError={() => setApiError(true)}
                       />
+                    </RequireAuth>
+                  }
+                  errorElement={<ErrorPage />}
+                />
+                <Route
+                  path="/manage-users"
+                  element={
+                    <RequireAuth>
+                      <ManageUsersPage />
                     </RequireAuth>
                   }
                   errorElement={<ErrorPage />}

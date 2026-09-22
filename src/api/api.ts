@@ -161,6 +161,20 @@ export type TWhepAuthKeyResponse = {
   whepAuthKey: string | null;
 };
 
+export type TUserListInfo = {
+  userId: string;
+  username: string;
+  displayName: string;
+  alias?: string;
+  isSuperAdmin?: boolean;
+  createdAt: string;
+  membershipCount: number;
+};
+
+export type TUserListResponse = {
+  users: TUserListInfo[];
+};
+
 export const API = {
   createProduction: async ({ name, lines }: TCreateProductionOptions) =>
     handleFetchRequest<TBasicProductionResponse>(
@@ -440,6 +454,20 @@ export const API = {
     handleFetchRequest<TWhepAuthKeyResponse>(
       fetch(`${API_URL}production/${productionId}/whep-auth-key`, {
         method: "GET",
+        credentials: "include",
+      })
+    ),
+  getUsers: (): Promise<TUserListResponse> =>
+    handleFetchRequest<TUserListResponse>(
+      fetch(`${API_URL}users`, {
+        method: "GET",
+        credentials: "include",
+      })
+    ),
+  deleteUser: (userId: string): Promise<string> =>
+    handleFetchRequest<string>(
+      fetch(`${API_URL}users/${userId}`, {
+        method: "DELETE",
         credentials: "include",
       })
     ),
