@@ -5,7 +5,10 @@
 
 import { isAndroid, isBrowserSafari, isIpad, isMobile } from "../../bowser.ts";
 import { attachGainControl } from "./audio-gain-control.ts";
-import { showAudioDebug } from "./audio-debug-panel.ts";
+import {
+  noteAudioElementCreated,
+  showAudioDebug,
+} from "./audio-debug-panel.ts";
 
 export type AudioElementOptions = {
   stream: MediaStream;
@@ -26,6 +29,7 @@ export const createAudioElement = ({
   onSinkError,
 }: AudioElementOptions): HTMLAudioElement => {
   const audioElement = new Audio();
+  noteAudioElementCreated();
 
   audioElement.id = `rtc-audio-${lineId}-${Date.now()}`;
   audioElement.controls = false;

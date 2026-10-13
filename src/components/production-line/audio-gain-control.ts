@@ -11,11 +11,20 @@
  * `volume` and `muted` are redefined on the element itself, so every existing caller keeps working.
  */
 
+/** How often the app set volume / muted on the element (diagnostics: does the app reach THIS element?). */
+export type SetterStats = {
+  volumeSets: number;
+  mutedSets: number;
+  lastVolume: number | null;
+  lastMuted: boolean | null;
+};
+
 type Control = {
   ctx: AudioContext;
   gain: GainNode;
   silent: MediaStream;
   resume: () => void;
+  stats: SetterStats;
 };
 
 const controls = new WeakMap<HTMLAudioElement, Control>();
@@ -53,6 +62,12 @@ export const attachGainControl = (
 
     let volume = 1;
     let muted = false;
+    const stats: SetterStats = {
+      volumeSets: 0,
+      mutedSets: 0,
+      lastVolume: null,
+      lastMuted: null,
+    };
     const apply = () => {
       gain.gain.value = muted ? 0 : volume;
     };
@@ -61,6 +76,8 @@ export const attachGainControl = (
       get: () => volume,
       set: (value: number) => {
         volume = Math.min(1, Math.max(0, Number(value)));
+        stats.volumeSets += 1;
+        stats.lastVolume = volume;
         apply();
       },
     });
@@ -69,6 +86,8 @@ export const attachGainControl = (
       get: () => muted,
       set: (value: boolean) => {
         muted = !!value;
+        stats.mutedSets += 1;
+        stats.lastMuted = muted;
         apply();
       },
     });
@@ -79,7 +98,7 @@ export const attachGainControl = (
     };
     resume();
     document.addEventListener("pointerdown", resume, { passive: true });
-    controls.set(element, { ctx, gain, silent, resume });
+    controls.set(element, { ctx, gain, silent, resume, stats });
     return silent;
   } catch {
     return null; // anything unexpected: keep the plain element behaviour

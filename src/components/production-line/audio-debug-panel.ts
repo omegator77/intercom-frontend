@@ -44,6 +44,13 @@ const nativeGet = (prop: "muted" | "volume") =>
 const nativeSet = (prop: "muted" | "volume") =>
   Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, prop)?.set;
 
+let createdElements = 0;
+
+/** Called for every audio element the app creates: more than one per call would be a finding. */
+export const noteAudioElementCreated = () => {
+  createdElements += 1;
+};
+
 export const showAudioDebug = (
   element: HTMLAudioElement,
   stream: MediaStream
@@ -110,6 +117,9 @@ export const showAudioDebug = (
         `paused=${element.paused} readyState=${element.readyState}`,
       `original track: enabled=${original?.enabled} muted=${original?.muted} state=${original?.readyState}`,
       `element's silent clone: ${silentTrack ? `enabled=${silentTrack.enabled}` : "none"}`,
+      `audio elements created in this page: ${createdElements}`,
+      `app set on THIS element: volume x${control?.stats.volumeSets ?? "-"} (last ${control?.stats.lastVolume ?? "-"}), ` +
+        `muted x${control?.stats.mutedSets ?? "-"} (last ${control?.stats.lastMuted ?? "-"})`,
     ].join("\n");
   };
   update();
