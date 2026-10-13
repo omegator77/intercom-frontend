@@ -13,6 +13,10 @@ const isIOS = (): boolean => {
 export const isMobile = deviceInfo.platform.type === "mobile";
 export const isIOSMobile = isIOS() && isMobile;
 
+// Chrome on Android plays a remote WebRTC stream on the call volume stream and ignores the
+// volume/muted properties of the audio element: volume slider and speaker mute do nothing there.
+export const isAndroid = /android/i.test(window.navigator.userAgent);
+
 export const isValidBrowser = browser.satisfies({
   chrome: ">=115",
   edge: ">=115",

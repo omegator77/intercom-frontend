@@ -3,7 +3,13 @@
  * Extracted from use-rtc-connection.ts lines 70-106 (onRtcTrack handler).
  */
 
-import { isBrowserSafari, isIpad, isMobile } from "../../bowser.ts";
+import {
+  isAndroid,
+  isBrowserSafari,
+  isIpad,
+  isMobile,
+} from "../../bowser.ts";
+import { attachGainControl } from "./audio-gain-control.ts";
 
 export type AudioElementOptions = {
   stream: MediaStream;
@@ -34,6 +40,11 @@ export const createAudioElement = ({
   };
 
   audioElement.srcObject = stream;
+
+  if (isAndroid) {
+    // volume/muted are ignored by the element on Android: drive them through a GainNode instead
+    attachGainControl(audioElement, stream);
+  }
 
   if (audiooutput && (!isBrowserSafari || !isMobile || !isIpad)) {
     audioElement.setSinkId(audiooutput).catch((e) => {
