@@ -113,23 +113,29 @@ export const UserSettingsForm = ({
 
   // Don't offer a line the user already has an active call on for this
   // production - joining it again isn't useful and just clutters the list.
-  const joinedLineIds = useMemo(() => {
-    if (!production) return new Set<string>();
-    return new Set(
-      Object.values(calls)
-        .filter(
-          (call) =>
-            call.joinProductionOptions?.productionId === production.productionId
-        )
-        .map((call) => call.joinProductionOptions?.lineId)
-        .filter((lineId): lineId is string => !!lineId)
-    );
+  // Kept as a string so it only changes when the set of joined lines really
+  // changes: `calls` gets a new identity on every call update (audio level,
+  // connection state, ...), and anything derived from it by identity would
+  // re-run the sync effect below constantly and keep resetting the selection.
+  const joinedLineIdsKey = useMemo(() => {
+    if (!production) return "";
+    return Object.values(calls)
+      .filter(
+        (call) =>
+          call.joinProductionOptions?.productionId === production.productionId
+      )
+      .map((call) => call.joinProductionOptions?.lineId)
+      .filter((lineId): lineId is string => !!lineId)
+      .sort()
+      .join(",");
   }, [calls, production]);
 
-  const availableLines = useMemo(
-    () => production?.lines.filter((line) => !joinedLineIds.has(line.id.toString())) ?? [],
-    [production, joinedLineIds]
-  );
+  const availableLines = useMemo(() => {
+    const joined = new Set(joinedLineIdsKey ? joinedLineIdsKey.split(",") : []);
+    return (
+      production?.lines.filter((line) => !joined.has(line.id.toString())) ?? []
+    );
+  }, [production, joinedLineIdsKey]);
 
   const { onSubmit } = useSubmitForm({
     isJoinProduction,
@@ -186,9 +192,19 @@ export const UserSettingsForm = ({
       return;
     }
 
-    const lineId = availableLines[0]?.id?.toString() || undefined;
+    // Once a production is chosen it decides productionId. Falling back to
+    // `selectedProductionId` here (the production of the call that is already
+    // running) sent every join to that production no matter what was picked
+    // in the dropdown. Keep the line the user picked while it is still
+    // available; otherwise default to the first free one.
+    const currentLineId = getValues("lineId");
+    const lineId = availableLines.some(
+      (line) => line.id.toString() === currentLineId
+    )
+      ? currentLineId
+      : availableLines[0]?.id?.toString() || undefined;
 
-    reset({ ...getValues(), productionId: nextProductionId, lineId });
+    reset({ ...getValues(), productionId: production.productionId, lineId });
     trigger(["productionId", "lineId"]);
   }, [
     preSelected,
@@ -289,6 +305,11 @@ export const UserSettingsForm = ({
               minLength: 1,
             })}
             onChange={(ev) => {
+              // This onChange replaces the one from register(), so tell the
+              // form about the new value ourselves.
+              setValue("productionId", ev.target.value, {
+                shouldValidate: true,
+              });
               setProduction(
                 productions?.productions.find(
                   (p) => p.productionId === ev.target.value
