@@ -6,7 +6,6 @@ vi.mock("../../bowser.ts", () => ({
   isBrowserSafari: false,
   isMobile: false,
   isIpad: false,
-  isAndroid: false,
 }));
 
 describe("createAudioElement", () => {
