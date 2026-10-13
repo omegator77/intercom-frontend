@@ -8,7 +8,7 @@
  * are redefined on the element itself, so every existing caller keeps working unchanged.
  */
 
-type Control = { ctx: AudioContext; resume: () => void };
+type Control = { ctx: AudioContext; gain: GainNode; resume: () => void };
 
 const controls = new WeakMap<HTMLAudioElement, Control>();
 
@@ -62,12 +62,15 @@ export const attachGainControl = (
     };
     resume();
     document.addEventListener("pointerdown", resume, { passive: true });
-    controls.set(element, { ctx, resume });
+    controls.set(element, { ctx, gain, resume });
     return true;
   } catch {
     return false; // anything unexpected: keep the plain element behaviour
   }
 };
+
+export const getGainControl = (element: HTMLAudioElement) =>
+  controls.get(element);
 
 export const releaseGainControl = (element: HTMLAudioElement): void => {
   const control = controls.get(element);
