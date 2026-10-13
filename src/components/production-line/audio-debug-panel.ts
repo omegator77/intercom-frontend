@@ -11,33 +11,14 @@ const PANEL_ID = "audio-debug-panel";
 
 const flagged = (): boolean => {
   try {
+    if (new URLSearchParams(window.location.search).has(FLAG)) {
+      window.sessionStorage.setItem(FLAG, "1");
+    }
     return window.sessionStorage.getItem(FLAG) === "1";
   } catch {
     return false;
   }
 };
-
-// Read the flag when the app loads: the app may redirect (e.g. to the login page) and drop the query
-// string long before the first audio element exists.
-try {
-  if (new URLSearchParams(window.location.search).has(FLAG)) {
-    window.sessionStorage.setItem(FLAG, "1");
-  }
-} catch {
-  // storage unavailable: the panel simply stays off
-}
-
-if (flagged()) {
-  const showBadge = () => {
-    const badge = document.createElement("div");
-    badge.textContent = "audiodebug aktiv";
-    badge.style.cssText =
-      "position:fixed;top:0;left:0;z-index:99999;background:#c00;color:#fff;font:11px monospace;padding:2px 6px;";
-    document.body.append(badge);
-  };
-  if (document.body) showBadge();
-  else document.addEventListener("DOMContentLoaded", showBadge);
-}
 
 const nativeGet = (prop: "muted" | "volume") =>
   Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, prop)?.get;
