@@ -46,9 +46,22 @@ const nativeSet = (prop: "muted" | "volume") =>
 
 const createdElements: HTMLAudioElement[] = [];
 
+const TRACE_LIMIT = 40;
+const traceLines: string[] = [];
+const traceStart = Date.now();
+
+/** Diagnostics: a short timeline of what happens to the audio elements (shown in the panel). */
+export const trace = (message: string) => {
+  traceLines.push(
+    `${((Date.now() - traceStart) / 1000).toFixed(1)}s ${message}`
+  );
+  if (traceLines.length > TRACE_LIMIT) traceLines.shift();
+};
+
 /** Called for every audio element the app creates: the panel lists all of them, not just the last. */
 export const noteAudioElementCreated = (element: HTMLAudioElement) => {
   createdElements.push(element);
+  trace(`element #${createdElements.length} created`);
 };
 
 let appList: HTMLAudioElement[] | null | undefined;
@@ -60,6 +73,9 @@ export const reportAppAudioElements = (
 ) => {
   appList = elements;
   appListUpdates += 1;
+  trace(
+    `call card now sees ${elements == null ? String(elements) : `${elements.length} element(s)`}`
+  );
 };
 
 export const showAudioDebug = (
@@ -129,6 +145,7 @@ export const showAudioDebug = (
       `original track: enabled=${original?.enabled} muted=${original?.muted} state=${original?.readyState}`,
       `element's silent clone: ${silentTrack ? `enabled=${silentTrack.enabled}` : "none"}`,
       `audio elements created in this page: ${createdElements.length} (the panel controls belong to the LAST one)`,
+      `trace (newest last):\n${traceLines.join("\n")}`,
       `call card's own list: ${
         appList == null
           ? String(appList)

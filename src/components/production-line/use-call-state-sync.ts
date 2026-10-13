@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { TGlobalStateAction } from "../../global-state/global-state-actions";
+import { trace } from "./audio-debug-panel.ts";
 
 type TStateUpdates = {
   connectionState: RTCPeerConnectionState | null;
@@ -32,6 +33,9 @@ export const useCallStateSync = ({
   }, [stateUpdates.connectionState, callId, dispatch]);
 
   useEffect(() => {
+    trace(
+      `sync: sending ${stateUpdates.audioElements.length} element(s) to the call card`
+    );
     dispatch({
       type: "UPDATE_CALL",
       payload: {
