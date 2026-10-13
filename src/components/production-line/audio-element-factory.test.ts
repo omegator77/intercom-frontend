@@ -146,4 +146,66 @@ describe("createAudioElement", () => {
 
     HTMLAudioElement.prototype.setSinkId = origSetSinkId;
   });
+
+  describe("recovery", () => {
+    const make = () => {
+      const el = createAudioElement({
+        stream: mockStream,
+        lineId: "line-1",
+        audiooutput: undefined,
+        onError,
+        onSinkError,
+      });
+      el.play = vi.fn().mockResolvedValue(undefined);
+      return el;
+    };
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("still reports a media error and then re-attaches the stream and plays again", () => {
+      const el = make();
+      el.onerror?.(new Event("error"));
+      expect(onError).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(600);
+      expect(el.srcObject).toBe(mockStream);
+      expect(el.play).toHaveBeenCalledTimes(1);
+    });
+
+    it("gives up after a few failed attempts, but starts over once playback runs again", () => {
+      const el = make();
+      for (let i = 0; i < 8; i += 1) {
+        el.onerror?.(new Event("error"));
+        vi.advanceTimersByTime(5000);
+      }
+      expect(el.play).toHaveBeenCalledTimes(5);
+
+      el.dispatchEvent(new Event("playing")); // it works again: the counter resets
+      el.onerror?.(new Event("error"));
+      vi.advanceTimersByTime(5000);
+      expect(el.play).toHaveBeenCalledTimes(6);
+    });
+
+    it("does not touch an element that was torn down during the delay", () => {
+      const el = make();
+      el.onerror?.(new Event("error"));
+      el.srcObject = null;
+      vi.advanceTimersByTime(5000);
+      expect(el.srcObject).toBeNull();
+      expect(el.play).not.toHaveBeenCalled();
+    });
+
+    it("resumes a paused element when the page becomes visible again", () => {
+      const el = make();
+      Object.defineProperty(el, "paused", { value: true, configurable: true });
+      document.dispatchEvent(new Event("visibilitychange"));
+      expect(el.play).toHaveBeenCalledTimes(1);
+    });
+  });
 });
