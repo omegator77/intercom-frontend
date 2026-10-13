@@ -2,6 +2,7 @@ import { Dispatch, useCallback, useEffect, useState } from "react";
 import { noop } from "../../helpers";
 import { TJoinProductionOptions } from "./types.ts";
 import { TGlobalStateAction } from "../../global-state/global-state-actions.ts";
+import { adoptKeepAliveCapture } from "./keep-alive-capture.ts";
 
 type TGetMediaDevicesOptions = {
   audioInputId: TJoinProductionOptions["audioinput"] | null;
@@ -26,6 +27,8 @@ export const useAudioInput: TUseAudioInput = ({ audioInputId, dispatch }) => {
     // dependency here (adding it would re-run this whole effect on every
     // stream change).
     let activeStream: MediaStream | null = null;
+    // Android browsers freeze a backgrounded tab without a live capture, see keep-alive-capture.ts
+    let releaseKeepAlive: () => void = noop;
 
     if (!audioInputId) return noop;
 
@@ -33,10 +36,15 @@ export const useAudioInput: TUseAudioInput = ({ audioInputId, dispatch }) => {
 
     // First request a generic audio stream to "reset" permissions
     navigator.mediaDevices.getUserMedia({ audio: true }).then((resetStream) => {
-      // Release it immediately - it was only needed to trigger the permission
-      // reset, and leaving it open holds the device (blocking other calls in
-      // this tab from opening the same physical device).
-      resetStream.getTracks().forEach((t) => t.stop());
+      // It was only needed to trigger the permission reset, so it is stopped here -
+      // except on Android, where ONE shared copy is kept for the whole page (see
+      // keep-alive-capture.ts). Leaving one per call open blocked the other calls'
+      // devices, which is why this used to be stopped always.
+      if (aborted) {
+        resetStream.getTracks().forEach((t) => t.stop());
+      } else {
+        releaseKeepAlive = adoptKeepAliveCapture(resetStream);
+      }
 
       // Then request the specific audio input the user has selected
       navigator.mediaDevices
@@ -80,6 +88,7 @@ export const useAudioInput: TUseAudioInput = ({ audioInputId, dispatch }) => {
 
     return () => {
       aborted = true;
+      releaseKeepAlive();
       if (activeStream) {
         activeStream.getTracks().forEach((t) => t.stop());
       }
