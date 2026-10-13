@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { releaseGainControl } from "./audio-gain-control.ts";
 
 export const useAudioElements = () => {
   const [audioElements, setAudioElements] = useState<HTMLAudioElement[]>([]);
@@ -16,6 +17,7 @@ export const useAudioElements = () => {
 
   const cleanUpAudio = useCallback(() => {
     audioElementsRef.current.forEach((el) => {
+      releaseGainControl(el);
       el.pause();
       // eslint-disable-next-line no-param-reassign
       el.srcObject = null;
