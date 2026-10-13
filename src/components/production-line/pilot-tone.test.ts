@@ -57,6 +57,8 @@ describe("startPilotTone", () => {
         paused: false,
         play,
         pause,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
       } as unknown as HTMLAudioElement;
       created.push(el);
       return el;
@@ -106,5 +108,53 @@ describe("startPilotTone", () => {
     document.dispatchEvent(new Event("pointerdown"));
     expect(play).toHaveBeenCalledTimes(2);
     release();
+  });
+
+  describe("staying alive", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const fire = (el: HTMLAudioElement, type: string) =>
+      (el.addEventListener as unknown as ReturnType<typeof vi.fn>).mock.calls
+        .filter(([name]) => name === type)
+        .forEach(([, handler]) => handler());
+
+    it("starts the tone again when something pauses it", () => {
+      const release = startPilotTone();
+      const el = created[0];
+      play.mockClear();
+      fire(el, "pause");
+      expect(play).toHaveBeenCalledTimes(1);
+      release();
+    });
+
+    it("does not restart it after the last call ended", () => {
+      const release = startPilotTone();
+      const el = created[0];
+      release();
+      play.mockClear();
+      fire(el, "pause");
+      expect(play).not.toHaveBeenCalled();
+    });
+
+    it("checks every few seconds and resumes a paused tone", () => {
+      const release = startPilotTone();
+      const el = created[0];
+      play.mockClear();
+      vi.advanceTimersByTime(5000);
+      expect(play).not.toHaveBeenCalled();
+      (el as unknown as { paused: boolean }).paused = true;
+      vi.advanceTimersByTime(5000);
+      expect(play).toHaveBeenCalledTimes(1);
+      release();
+      play.mockClear();
+      vi.advanceTimersByTime(30_000);
+      expect(play).not.toHaveBeenCalled();
+    });
   });
 });

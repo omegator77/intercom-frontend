@@ -44,8 +44,11 @@ export const buildPilotWav = (): Uint8Array => {
   return bytes;
 };
 
+const WATCHDOG_MS = 5000;
+
 let element: HTMLAudioElement | null = null;
 let objectUrl: string | null = null;
+let watchdog: number | null = null;
 let users = 0;
 
 const play = () => {
@@ -61,6 +64,14 @@ const resumeIfPaused = () => {
   }
 };
 
+// The tone is a technical keep-alive, not something to pause: if the media notification (or anything
+// else) pauses it, the page would fall asleep again. Start it again right away.
+const onPaused = () => {
+  if (element && users > 0) play();
+};
+
+const MEDIA_ACTIONS: MediaSessionAction[] = ["pause", "stop"];
+
 export const startPilotTone = (): (() => void) => {
   if (!isAndroid) return () => undefined;
 
@@ -72,9 +83,21 @@ export const startPilotTone = (): (() => void) => {
     element = new Audio(objectUrl);
     element.loop = true;
     document.addEventListener("visibilitychange", resumeIfPaused);
+    element.addEventListener("pause", onPaused);
+    watchdog = window.setInterval(() => {
+      if (element?.paused) play();
+    }, WATCHDOG_MS);
     if ("mediaSession" in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: "Intercom - Leitung verbunden",
+        artist: "Bitte nicht schließen",
+      });
+      MEDIA_ACTIONS.forEach((action) => {
+        try {
+          navigator.mediaSession.setActionHandler(action, play);
+        } catch {
+          // this browser does not know the action
+        }
       });
     }
     play();
@@ -88,6 +111,18 @@ export const startPilotTone = (): (() => void) => {
     if (users === 0 && element) {
       document.removeEventListener("visibilitychange", resumeIfPaused);
       document.removeEventListener("pointerdown", play);
+      element.removeEventListener("pause", onPaused);
+      if (watchdog !== null) window.clearInterval(watchdog);
+      watchdog = null;
+      if ("mediaSession" in navigator) {
+        MEDIA_ACTIONS.forEach((action) => {
+          try {
+            navigator.mediaSession.setActionHandler(action, null);
+          } catch {
+            // nothing to undo
+          }
+        });
+      }
       element.pause();
       element = null;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
