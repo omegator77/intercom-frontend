@@ -51,6 +51,17 @@ export const noteAudioElementCreated = (element: HTMLAudioElement) => {
   createdElements.push(element);
 };
 
+let appList: HTMLAudioElement[] | null | undefined;
+let appListUpdates = 0;
+
+/** The call card reports the list it works with, so the panel can show what the app really holds. */
+export const reportAppAudioElements = (
+  elements: HTMLAudioElement[] | null | undefined
+) => {
+  appList = elements;
+  appListUpdates += 1;
+};
+
 export const showAudioDebug = (
   element: HTMLAudioElement,
   stream: MediaStream
@@ -118,6 +129,15 @@ export const showAudioDebug = (
       `original track: enabled=${original?.enabled} muted=${original?.muted} state=${original?.readyState}`,
       `element's silent clone: ${silentTrack ? `enabled=${silentTrack.enabled}` : "none"}`,
       `audio elements created in this page: ${createdElements.length} (the panel controls belong to the LAST one)`,
+      `call card's own list: ${
+        appList == null
+          ? String(appList)
+          : `${appList.length} element(s): ${
+              appList
+                .map((el) => `#${createdElements.indexOf(el) + 1 || "?"}`)
+                .join(" ") || "-"
+            }`
+      } (updated x${appListUpdates})`,
       ...createdElements.map((el, i) => {
         const ctl = getGainControl(el);
         return (

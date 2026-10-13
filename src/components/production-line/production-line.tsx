@@ -36,6 +36,7 @@ import { useAudioCue } from "./use-audio-cue.ts";
 import { useAudioInput } from "./use-audio-input.ts";
 import { useAutoReconnect } from "./use-auto-reconnect.ts";
 import { startPilotTone } from "./pilot-tone.ts";
+import { reportAppAudioElements } from "./audio-debug-panel.ts";
 import { useCheckBadLineData } from "./use-check-bad-line-data.ts";
 import { useIsLoading } from "./use-is-loading.ts";
 import { useLineHotkeys, useSpeakerHotkeys } from "./use-line-hotkeys.ts";
@@ -212,6 +213,11 @@ export const ProductionLine = ({
     isProgramUser,
     isSomeoneSpeaking,
   ]);
+
+  // diagnostics only: lets the ?audiodebug=1 panel show the list this call card works with
+  useEffect(() => {
+    reportAppAudioElements(audioElements);
+  }, [audioElements]);
 
   useEffect(() => {
     if (audioElements) {
