@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router";
-import { API } from "../../api/api.ts";
 import { isBrowserFirefox, isMobile, isTablet } from "../../bowser.ts";
 import { useGlobalState } from "../../global-state/context-provider.tsx";
 import { CallState } from "../../global-state/types.ts";
@@ -36,6 +35,7 @@ import { useActiveParticipant } from "./use-active-participant.tsx";
 import { useAudioCue } from "./use-audio-cue.ts";
 import { useAudioInput } from "./use-audio-input.ts";
 import { useAutoReconnect } from "./use-auto-reconnect.ts";
+import { startPilotTone } from "./pilot-tone.ts";
 import { useCheckBadLineData } from "./use-check-bad-line-data.ts";
 import { useIsLoading } from "./use-is-loading.ts";
 import { useLineHotkeys, useSpeakerHotkeys } from "./use-line-hotkeys.ts";
@@ -397,15 +397,12 @@ export const ProductionLine = ({
 
   const { loading, connectionError } = useIsLoading({ connectionState });
 
-  // A peer connection that ended up "failed" (typically after the browser froze the page with a
-  // locked screen) is rebuilt in place: same line, same mic stream, new session. The old session is
-  // deleted so nobody sees the user twice until it times out.
+  // A call that died while the browser had frozen the page (locked screen) is rebuilt in place: same
+  // line, same mic stream, new session. Taking the old connection component away deletes the old
+  // session (see use-establish-session), so nobody sees the user twice until it times out.
   const reconnect = useCallback(() => {
     if (!joinProductionOptions) return;
-    logger.cyan(`Connection failed, rebuilding call ${id}`);
-    if (sessionId) {
-      API.deleteAudioSession({ sessionId }).catch(logger.red);
-    }
+    logger.cyan(`Connection lost, rebuilding call ${id}`);
     setConnectionActive(false);
     dispatch({
       type: "UPDATE_CALL",
@@ -422,12 +419,36 @@ export const ProductionLine = ({
         },
       },
     });
-  }, [dispatch, id, joinProductionOptions, sessionId]);
+  }, [dispatch, id, joinProductionOptions]);
+
+  // When the page is shown again: is the call still fine? A call that is still being set up counts as fine.
+  const isCallHealthy = () => {
+    if (
+      connectionState === null ||
+      connectionState === "new" ||
+      connectionState === "connecting"
+    ) {
+      return true;
+    }
+    if (connectionState !== "connected") return false;
+    return (
+      !dataChannel ||
+      dataChannel.readyState === "open" ||
+      dataChannel.readyState === "connecting"
+    );
+  };
 
   const { gaveUp } = useAutoReconnect({
     connectionState: connectionState as RTCPeerConnectionState | null,
+    isHealthy: isCallHealthy,
     onReconnect: reconnect,
   });
+
+  // Keep the page awake while the call is up (Android freezes silent background tabs), see pilot-tone.ts
+  useEffect(() => {
+    if (connectionState !== "connected") return undefined;
+    return startPilotTone();
+  }, [connectionState]);
 
   useCheckBadLineData({
     joinProductionOptions,

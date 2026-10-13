@@ -3,25 +3,42 @@ import { renderHook, act } from "@testing-library/react";
 import {
   MAX_RECONNECTS,
   RECONNECT_DELAY_MS,
+  RETURN_DELAY_MS,
   useAutoReconnect,
 } from "./use-auto-reconnect.ts";
 
 type State = RTCPeerConnectionState | null;
 
+const showPage = (visible: boolean) => {
+  Object.defineProperty(document, "visibilityState", {
+    value: visible ? "visible" : "hidden",
+    configurable: true,
+  });
+  document.dispatchEvent(new Event("visibilitychange"));
+};
+
 describe("useAutoReconnect", () => {
+  let healthy: boolean;
+
   beforeEach(() => {
     vi.useFakeTimers();
+    healthy = true;
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    showPage(true);
   });
 
   const setup = (initial: State) => {
     const onReconnect = vi.fn();
     const hook = renderHook(
       ({ state }: { state: State }) =>
-        useAutoReconnect({ connectionState: state, onReconnect }),
+        useAutoReconnect({
+          connectionState: state,
+          isHealthy: () => healthy,
+          onReconnect,
+        }),
       { initialProps: { state: initial } }
     );
     return { onReconnect, ...hook };
@@ -88,5 +105,52 @@ describe("useAutoReconnect", () => {
     onReconnect.mockClear();
     vi.advanceTimersByTime(RECONNECT_DELAY_MS);
     expect(onReconnect).toHaveBeenCalledTimes(1);
+  });
+
+  describe("when the page becomes visible again", () => {
+    it("rebuilds quickly if the call is not healthy", () => {
+      const { onReconnect } = setup("disconnected");
+      healthy = false;
+      showPage(false);
+      showPage(true);
+      vi.advanceTimersByTime(RETURN_DELAY_MS - 1);
+      expect(onReconnect).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(onReconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it("leaves a healthy call alone", () => {
+      const { onReconnect } = setup("connected");
+      showPage(false);
+      showPage(true);
+      vi.advanceTimersByTime(60_000);
+      expect(onReconnect).not.toHaveBeenCalled();
+    });
+
+    it("does not react to the page being hidden", () => {
+      const { onReconnect } = setup("disconnected");
+      healthy = false;
+      showPage(false);
+      vi.advanceTimersByTime(60_000);
+      expect(onReconnect).not.toHaveBeenCalled();
+    });
+
+    it("does not schedule a second attempt while one is already pending", () => {
+      const { onReconnect, rerender } = setup("connected");
+      rerender({ state: "failed" });
+      healthy = false;
+      showPage(true);
+      vi.advanceTimersByTime(RECONNECT_DELAY_MS);
+      expect(onReconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it("drops the pending rebuild when the connection recovers on its own", () => {
+      const { onReconnect, rerender } = setup("disconnected");
+      healthy = false;
+      showPage(true);
+      rerender({ state: "connected" });
+      vi.advanceTimersByTime(60_000);
+      expect(onReconnect).not.toHaveBeenCalled();
+    });
   });
 });
