@@ -126,6 +126,30 @@ describe("createAudioElement", () => {
     HTMLAudioElement.prototype.setSinkId = origSetSinkId;
   });
 
+  it("does not throw when the browser has no setSinkId (Chrome for Android)", () => {
+    const origSetSinkId = HTMLAudioElement.prototype.setSinkId;
+    // @ts-expect-error simulate a browser without the output device API
+    HTMLAudioElement.prototype.setSinkId = undefined;
+
+    try {
+      const el = createAudioElement({
+        stream: mockStream,
+        lineId: "line-1",
+        audiooutput: "default",
+        onError,
+        onSinkError,
+      });
+
+      // it used to throw right after creating the element: the caller never got it, so the call's list
+      // stayed empty and the volume slider and mute button could not reach it
+      expect(el).toBeInstanceOf(HTMLAudioElement);
+      expect(el.srcObject).toBe(mockStream);
+      expect(onSinkError).not.toHaveBeenCalled();
+    } finally {
+      HTMLAudioElement.prototype.setSinkId = origSetSinkId;
+    }
+  });
+
   it("calls onSinkError callback when setSinkId rejects", async () => {
     const sinkError = new Error("Sink not found");
     const setSinkIdMock = vi.fn().mockRejectedValue(sinkError);

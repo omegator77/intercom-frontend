@@ -18,6 +18,15 @@ export type AudioElementOptions = {
   onSinkError: (error: Error) => void;
 };
 
+/**
+ * Choosing the output device (setSinkId) does not exist in every browser, e.g. not in Chrome for Android.
+ * Calling it there throws: createAudioElement used to abort right after creating the element, so the
+ * element kept playing but was never added to the call's list, and the volume slider and the speaker
+ * mute button never reached it.
+ */
+export const supportsSinkId = (element: HTMLAudioElement): boolean =>
+  typeof element.setSinkId === "function";
+
 const MAX_RECOVERIES = 5;
 const RECOVERY_DELAY_MS = 500;
 
@@ -80,7 +89,11 @@ export const createAudioElement = ({
   noteAudioElementCreated(audioElement);
   showAudioDebug(audioElement, stream);
 
-  if (audiooutput && (!isBrowserSafari || !isMobile || !isIpad)) {
+  if (
+    audiooutput &&
+    (!isBrowserSafari || !isMobile || !isIpad) &&
+    supportsSinkId(audioElement)
+  ) {
     audioElement.setSinkId(audiooutput).catch((e) => {
       onSinkError(
         e instanceof Error ? e : new Error("Error assigning audio sink.")

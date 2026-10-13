@@ -12,6 +12,7 @@ import {
 } from "../form-elements/form-elements";
 import { ReloadDevicesButton } from "../reload-devices-button.tsx/reload-devices-button";
 import { DeviceButtonWrapper } from "./production-line-components";
+import { supportsSinkId } from "./audio-element-factory";
 import { TJoinProductionOptions, TLine } from "./types";
 
 type FormValues = TJoinProductionOptions & {
@@ -72,7 +73,7 @@ export const SelectDevices = ({
   // Reset connection and re-connect to production-line
   const onSubmit: SubmitHandler<FormValues> = async (payload) => {
     if (joinProductionOptions && audioInputTheSame && !audioOutputTheSame) {
-      audioElements.forEach((audioElement) => {
+      audioElements.filter(supportsSinkId).forEach((audioElement) => {
         audioElement.setSinkId(payload.audiooutput || "");
       });
       dispatch({

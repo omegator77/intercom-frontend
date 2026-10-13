@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { isBrowserFirefox } from "../../bowser";
 import { useGlobalState } from "../../global-state/context-provider";
 import { TJoinProductionOptions } from "./types";
+import { supportsSinkId } from "./audio-element-factory";
 
 type TUpdateCallDevice = {
   id: string;
@@ -49,7 +50,7 @@ export const useUpdateCallDevice = ({
 
       if ((!audioInputTheSame || !audioOutputTheSame) && audioElements) {
         if (audioInputTheSame && !audioOutputTheSame) {
-          audioElements.forEach((audioElement) => {
+          audioElements.filter(supportsSinkId).forEach((audioElement) => {
             audioElement.setSinkId(payload.audiooutput || "");
           });
           dispatch({
