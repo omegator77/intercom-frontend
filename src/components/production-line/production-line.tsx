@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router";
+import { API } from "../../api/api.ts";
 import { isBrowserFirefox, isMobile, isTablet } from "../../bowser.ts";
 import { useGlobalState } from "../../global-state/context-provider.tsx";
 import { CallState } from "../../global-state/types.ts";
@@ -34,6 +35,7 @@ import { SymphonyRtcConnectionComponent } from "./symphony-rtc-connection-compon
 import { useActiveParticipant } from "./use-active-participant.tsx";
 import { useAudioCue } from "./use-audio-cue.ts";
 import { useAudioInput } from "./use-audio-input.ts";
+import { useAutoReconnect } from "./use-auto-reconnect.ts";
 import { useCheckBadLineData } from "./use-check-bad-line-data.ts";
 import { useIsLoading } from "./use-is-loading.ts";
 import { useLineHotkeys, useSpeakerHotkeys } from "./use-line-hotkeys.ts";
@@ -395,6 +397,38 @@ export const ProductionLine = ({
 
   const { loading, connectionError } = useIsLoading({ connectionState });
 
+  // A peer connection that ended up "failed" (typically after the browser froze the page with a
+  // locked screen) is rebuilt in place: same line, same mic stream, new session. The old session is
+  // deleted so nobody sees the user twice until it times out.
+  const reconnect = useCallback(() => {
+    if (!joinProductionOptions) return;
+    logger.cyan(`Connection failed, rebuilding call ${id}`);
+    if (sessionId) {
+      API.deleteAudioSession({ sessionId }).catch(logger.red);
+    }
+    setConnectionActive(false);
+    dispatch({
+      type: "UPDATE_CALL",
+      payload: {
+        id,
+        updates: {
+          joinProductionOptions: { ...joinProductionOptions },
+          mediaStreamInput: null,
+          dominantSpeaker: null,
+          audioLevelAboveThreshold: false,
+          connectionState: null,
+          audioElements: null,
+          sessionId: null,
+        },
+      },
+    });
+  }, [dispatch, id, joinProductionOptions, sessionId]);
+
+  const { gaveUp } = useAutoReconnect({
+    connectionState: connectionState as RTCPeerConnectionState | null,
+    onReconnect: reconnect,
+  });
+
   useCheckBadLineData({
     joinProductionOptions,
     paramLineId,
@@ -434,8 +468,8 @@ export const ProductionLine = ({
       }
     >
       {joinProductionOptions &&
-        loading &&
-        (!connectionError ? (
+        (loading || connectionError) &&
+        (!connectionError || !gaveUp ? (
           <LoaderWrapper>
             <Spinner className="join-production" />
           </LoaderWrapper>

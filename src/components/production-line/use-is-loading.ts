@@ -11,8 +11,13 @@ export const useIsLoading = ({ connectionState }: TProps) => {
   useEffect(() => {
     if (connectionState === "connected") {
       setLoading(false);
+      setConnectionError(false);
     } else if (connectionState === "failed") {
       setConnectionError(true);
+    } else if (connectionState === null) {
+      // the call is being (re)built: a rebuilt call must not stay stuck in the earlier failure
+      setLoading(true);
+      setConnectionError(false);
     }
   }, [connectionState]);
 
