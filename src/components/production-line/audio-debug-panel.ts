@@ -44,11 +44,11 @@ const nativeGet = (prop: "muted" | "volume") =>
 const nativeSet = (prop: "muted" | "volume") =>
   Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, prop)?.set;
 
-let createdElements = 0;
+const createdElements: HTMLAudioElement[] = [];
 
-/** Called for every audio element the app creates: more than one per call would be a finding. */
-export const noteAudioElementCreated = () => {
-  createdElements += 1;
+/** Called for every audio element the app creates: the panel lists all of them, not just the last. */
+export const noteAudioElementCreated = (element: HTMLAudioElement) => {
+  createdElements.push(element);
 };
 
 export const showAudioDebug = (
@@ -117,9 +117,16 @@ export const showAudioDebug = (
         `paused=${element.paused} readyState=${element.readyState}`,
       `original track: enabled=${original?.enabled} muted=${original?.muted} state=${original?.readyState}`,
       `element's silent clone: ${silentTrack ? `enabled=${silentTrack.enabled}` : "none"}`,
-      `audio elements created in this page: ${createdElements}`,
-      `app set on THIS element: volume x${control?.stats.volumeSets ?? "-"} (last ${control?.stats.lastVolume ?? "-"}), ` +
-        `muted x${control?.stats.mutedSets ?? "-"} (last ${control?.stats.lastMuted ?? "-"})`,
+      `audio elements created in this page: ${createdElements.length} (the panel controls belong to the LAST one)`,
+      ...createdElements.map((el, i) => {
+        const c = getGainControl(el);
+        return (
+          `#${i + 1}${el === element ? "*" : " "} app set volume x${c?.stats.volumeSets ?? "-"} ` +
+          `(last ${c?.stats.lastVolume ?? "-"}) muted x${c?.stats.mutedSets ?? "-"} ` +
+          `(last ${c?.stats.lastMuted ?? "-"}) gain=${c?.gain.gain.value ?? "-"} ` +
+          `ctx=${c?.ctx.state ?? "-"} paused=${el.paused}`
+        );
+      }),
     ].join("\n");
   };
   update();

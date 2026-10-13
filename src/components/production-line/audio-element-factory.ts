@@ -29,7 +29,6 @@ export const createAudioElement = ({
   onSinkError,
 }: AudioElementOptions): HTMLAudioElement => {
   const audioElement = new Audio();
-  noteAudioElementCreated();
 
   audioElement.id = `rtc-audio-${lineId}-${Date.now()}`;
   audioElement.controls = false;
@@ -78,6 +77,7 @@ export const createAudioElement = ({
     // volume/muted are ignored by the element on Android: drive them through a GainNode instead
     playbackStream = attachGainControl(audioElement, stream) ?? stream;
   }
+  noteAudioElementCreated(audioElement);
   showAudioDebug(audioElement, stream);
 
   if (audiooutput && (!isBrowserSafari || !isMobile || !isIpad)) {
