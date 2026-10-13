@@ -96,6 +96,18 @@ describe("attachGainControl", () => {
     expect(ctxInstance.close).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps the plain element with ?webaudio=off", () => {
+    window.sessionStorage.setItem("webaudio", "off");
+    try {
+      const el = document.createElement("audio");
+      expect(attachGainControl(el, fakeStream().stream)).toBeNull();
+      el.volume = 0.4; // untouched native behaviour
+      expect(el.volume).toBeCloseTo(0.4);
+    } finally {
+      window.sessionStorage.removeItem("webaudio");
+    }
+  });
+
   it("leaves the element alone when Web Audio is unavailable or fails", () => {
     vi.stubGlobal("AudioContext", undefined);
     const el = document.createElement("audio");

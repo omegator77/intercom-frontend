@@ -11,6 +11,26 @@
  * `volume` and `muted` are redefined on the element itself, so every existing caller keeps working.
  */
 
+const SWITCH_KEY = "webaudio";
+
+// TEMPORARY test switch: ?webaudio=off keeps the plain audio element (no Web Audio route) for this
+// browser session, to find out whether the route is still needed now that setSinkId is guarded.
+// Read at load: the app may redirect and drop the query string before the first call is connected.
+try {
+  const fromUrl = new URLSearchParams(window.location.search).get(SWITCH_KEY);
+  if (fromUrl) window.sessionStorage.setItem(SWITCH_KEY, fromUrl);
+} catch {
+  // storage unavailable: the route stays on
+}
+
+const webAudioDisabled = (): boolean => {
+  try {
+    return window.sessionStorage.getItem(SWITCH_KEY) === "off";
+  } catch {
+    return false;
+  }
+};
+
 type Control = {
   ctx: AudioContext;
   gain: GainNode;
@@ -25,6 +45,7 @@ export const attachGainControl = (
   element: HTMLAudioElement,
   stream: MediaStream
 ): MediaStream | null => {
+  if (webAudioDisabled()) return null;
   try {
     const AudioContextClass =
       window.AudioContext ||
