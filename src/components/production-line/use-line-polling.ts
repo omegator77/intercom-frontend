@@ -18,6 +18,7 @@ export const useLinePolling = ({ callId, joinProductionOptions }: TProps) => {
     if (!joinProductionOptions) return noop;
 
     let consecutiveFailureCount = 0;
+    let errorShown = false;
     const productionId = parseInt(joinProductionOptions.productionId, 10);
     const lineId = parseInt(joinProductionOptions.lineId, 10);
 
@@ -25,6 +26,12 @@ export const useLinePolling = ({ callId, joinProductionOptions }: TProps) => {
       API.fetchProductionLine(productionId, lineId)
         .then((l) => {
           consecutiveFailureCount = 0;
+          if (errorShown) {
+            // the network is back (typically right after a locked phone was woken up): the banner
+            // about the failed requests is out of date, take it away again
+            errorShown = false;
+            dispatch({ type: "ERROR", payload: { callId, error: null } });
+          }
           setLine(l);
         })
         .catch(() => {
@@ -33,6 +40,7 @@ export const useLinePolling = ({ callId, joinProductionOptions }: TProps) => {
             `Error fetching production line ${productionId}/${lineId}. For call-id: ${callId}`
           );
           if (consecutiveFailureCount >= 5) {
+            errorShown = true;
             dispatch({
               type: "ERROR",
               payload: {
