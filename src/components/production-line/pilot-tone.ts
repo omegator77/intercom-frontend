@@ -49,18 +49,6 @@ try {
   // storage unavailable: the default stays
 }
 
-/**
- * TEMPORARY test switch: ?pilot=off turns the pilot tone off for this browser session, to find out
- * whether it is needed at all. Remove together with the pilot if it is not.
- */
-const pilotDisabled = (): boolean => {
-  try {
-    return window.sessionStorage.getItem(SETTINGS_KEY) === "off";
-  } catch {
-    return false;
-  }
-};
-
 const currentSettings = (): PilotSettings => {
   try {
     return parsePilotSettings(window.sessionStorage.getItem(SETTINGS_KEY));
@@ -129,7 +117,7 @@ const onPaused = () => {
 const MEDIA_ACTIONS: MediaSessionAction[] = ["pause", "stop"];
 
 export const startPilotTone = (): (() => void) => {
-  if (!isAndroid || pilotDisabled()) return () => undefined;
+  if (!isAndroid) return () => undefined;
 
   users += 1;
   if (!element) {

@@ -141,17 +141,6 @@ describe("startPilotTone", () => {
     release();
   });
 
-  it("is switched off for the browser session with ?pilot=off", () => {
-    window.sessionStorage.setItem("pilot", "off");
-    try {
-      startPilotTone()();
-      expect(created).toHaveLength(0);
-      expect(play).not.toHaveBeenCalled();
-    } finally {
-      window.sessionStorage.removeItem("pilot");
-    }
-  });
-
   it("does nothing when it is not Android", () => {
     flags.android = false;
     startPilotTone()();
