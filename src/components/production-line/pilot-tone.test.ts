@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { buildPilotWav, startPilotTone } from "./pilot-tone.ts";
+import {
+  buildPilotWav,
+  DEFAULT_PILOT,
+  parsePilotSettings,
+  startPilotTone,
+} from "./pilot-tone.ts";
 
 const flags = vi.hoisted(() => ({ android: true }));
 vi.mock("../../bowser.ts", () => ({
@@ -29,8 +34,8 @@ describe("buildPilotWav", () => {
       peak = Math.max(peak, Math.abs(view.getInt16(o, true)));
     }
     const dbfs = 20 * Math.log10(peak / 32767);
-    expect(dbfs).toBeLessThan(-40);
-    expect(dbfs).toBeGreaterThan(-55);
+    expect(dbfs).toBeLessThan(-58); // crackled in a phone speaker at -44 dBFS
+    expect(dbfs).toBeGreaterThan(-68); // the browser needs ~-72 dBFS RMS to count it as audio
   });
 
   it("loops without a click: it ends where it starts", () => {
@@ -38,6 +43,49 @@ describe("buildPilotWav", () => {
     const last = view.getInt16(wav.length - 2, true);
     expect(Math.abs(first)).toBeLessThan(5);
     expect(Math.abs(last - first)).toBeLessThan(40);
+  });
+});
+
+describe("pilot settings", () => {
+  it("accepts frequency and level from the address bar", () => {
+    expect(parsePilotSettings("30,-66")).toEqual({
+      frequencyHz: 30,
+      dbfs: -66,
+    });
+    expect(parsePilotSettings(" 33.33 , -60 ")).toEqual({
+      frequencyHz: 33.3,
+      dbfs: -60,
+    });
+  });
+
+  it("falls back to the default for anything missing or out of range", () => {
+    [
+      null,
+      undefined,
+      "",
+      "abc",
+      "30",
+      "5,-60",
+      "500,-60",
+      "30,-10",
+      "30,-120",
+      "x,y",
+    ].forEach((bad) => {
+      expect(parsePilotSettings(bad)).toEqual(DEFAULT_PILOT);
+    });
+  });
+
+  it("builds a different tone for different settings and keeps the loop seamless", () => {
+    const wav = buildPilotWav({ frequencyHz: 33.3, dbfs: -66 });
+    const view = new DataView(wav.buffer);
+    let peak = 0;
+    for (let o = 44; o < wav.length; o += 2) {
+      peak = Math.max(peak, Math.abs(view.getInt16(o, true)));
+    }
+    expect(20 * Math.log10(peak / 32767)).toBeCloseTo(-66, 0);
+    expect(Math.abs(view.getInt16(wav.length - 2, true))).toBeLessThan(
+      Math.abs(view.getInt16(44 + 2 * 20, true)) + 6
+    );
   });
 });
 

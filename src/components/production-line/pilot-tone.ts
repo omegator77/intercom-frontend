@@ -4,8 +4,11 @@
  * Android browsers freeze a backgrounded tab - screen locked, nothing audible playing - after a short
  * while: timers stop, heartbeats stop, the server drops the session and the call is gone on return.
  * A tab that plays audio is left alone, but a call with nobody talking plays nothing audible. This
- * keeps a very quiet 25 Hz tone looping in an audio element: far below what a phone speaker can
- * reproduce and ~-48 dBFS, yet above the level at which the browser treats a page as playing audio.
+ * keeps a very quiet low tone looping in an audio element. It has to stay above the level at which the
+ * browser treats a page as playing audio (about -72 dBFS RMS) and below what a phone speaker turns
+ * into sound or noise: at -44 dBFS the speaker membrane already moved and crackled, so the default is
+ * -63 dBFS. Both values can be tuned from the address bar without a new build: ?pilot=<Hz>,<dBFS>
+ * (e.g. ?pilot=30,-66), which is remembered for the browser session.
  *
  * Counted by the connected calls and stopped with the last one.
  */
@@ -13,11 +16,52 @@ import { isAndroid } from "../../bowser.ts";
 
 const SAMPLE_RATE = 8000;
 const SECONDS = 10; // long enough for the browser to treat it as real media, whole cycles = seamless loop
-const FREQUENCY_HZ = 25;
-const AMPLITUDE = 0.006; // peak, about -44 dBFS
+
+export type PilotSettings = { frequencyHz: number; dbfs: number };
+export const DEFAULT_PILOT: PilotSettings = { frequencyHz: 25, dbfs: -63 };
+
+/** "30,-66" -> 30 Hz at -66 dBFS peak. Anything missing or out of range falls back to the default. */
+export const parsePilotSettings = (
+  raw: string | null | undefined
+): PilotSettings => {
+  const [hz, dbfs] = (raw ?? "").split(",").map((v) => Number(v.trim()));
+  if (
+    Number.isFinite(hz) &&
+    Number.isFinite(dbfs) &&
+    hz >= 10 &&
+    hz <= 200 &&
+    dbfs >= -80 &&
+    dbfs <= -30
+  ) {
+    // whole cycles in the loop keep it seamless: resolution 0.1 Hz
+    return { frequencyHz: Math.round(hz * 10) / 10, dbfs };
+  }
+  return DEFAULT_PILOT;
+};
+
+const SETTINGS_KEY = "pilot";
+
+// Read at load: the app may redirect and drop the query string before the first call is connected.
+try {
+  const fromUrl = new URLSearchParams(window.location.search).get(SETTINGS_KEY);
+  if (fromUrl) window.sessionStorage.setItem(SETTINGS_KEY, fromUrl);
+} catch {
+  // storage unavailable: the default stays
+}
+
+const currentSettings = (): PilotSettings => {
+  try {
+    return parsePilotSettings(window.sessionStorage.getItem(SETTINGS_KEY));
+  } catch {
+    return DEFAULT_PILOT;
+  }
+};
 
 /** 16-bit mono PCM WAV of the looping tone. */
-export const buildPilotWav = (): Uint8Array => {
+export const buildPilotWav = (
+  settings: PilotSettings = DEFAULT_PILOT
+): Uint8Array => {
+  const amplitude = 10 ** (settings.dbfs / 20);
   const samples = SAMPLE_RATE * SECONDS;
   const bytes = new Uint8Array(44 + samples * 2);
   const view = new DataView(bytes.buffer);
@@ -38,8 +82,8 @@ export const buildPilotWav = (): Uint8Array => {
   text(36, "data");
   view.setUint32(40, samples * 2, true);
   for (let i = 0; i < samples; i += 1) {
-    const v = Math.sin((2 * Math.PI * FREQUENCY_HZ * i) / SAMPLE_RATE);
-    view.setInt16(44 + i * 2, Math.round(v * AMPLITUDE * 32767), true);
+    const v = Math.sin((2 * Math.PI * settings.frequencyHz * i) / SAMPLE_RATE);
+    view.setInt16(44 + i * 2, Math.round(v * amplitude * 32767), true);
   }
   return bytes;
 };
@@ -78,7 +122,9 @@ export const startPilotTone = (): (() => void) => {
   users += 1;
   if (!element) {
     objectUrl = URL.createObjectURL(
-      new Blob([buildPilotWav().buffer as ArrayBuffer], { type: "audio/wav" })
+      new Blob([buildPilotWav(currentSettings()).buffer as ArrayBuffer], {
+        type: "audio/wav",
+      })
     );
     element = new Audio(objectUrl);
     element.loop = true;
