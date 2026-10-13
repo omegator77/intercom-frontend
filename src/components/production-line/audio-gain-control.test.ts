@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  attachGainControl,
-  getGainControl,
-  releaseGainControl,
-} from "./audio-gain-control.ts";
+import { attachGainControl, releaseGainControl } from "./audio-gain-control.ts";
 
 const gainParam = { value: 1 };
 const ctxInstance = {
@@ -92,7 +88,6 @@ describe("attachGainControl", () => {
     const { stream, cloneTrack } = fakeStream();
     attachGainControl(el, stream);
     expect(ctxInstance.resume).toHaveBeenCalled();
-    expect(getGainControl(el)).toBeDefined();
 
     releaseGainControl(el);
     expect(ctxInstance.close).toHaveBeenCalledTimes(1);

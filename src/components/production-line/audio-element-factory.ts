@@ -5,10 +5,6 @@
 
 import { isAndroid, isBrowserSafari, isIpad, isMobile } from "../../bowser.ts";
 import { attachGainControl } from "./audio-gain-control.ts";
-import {
-  noteAudioElementCreated,
-  showAudioDebug,
-} from "./audio-debug-panel.ts";
 
 export type AudioElementOptions = {
   stream: MediaStream;
@@ -86,8 +82,6 @@ export const createAudioElement = ({
     // volume/muted are ignored by the element on Android: drive them through a GainNode instead
     playbackStream = attachGainControl(audioElement, stream) ?? stream;
   }
-  noteAudioElementCreated(audioElement);
-  showAudioDebug(audioElement, stream);
 
   if (
     audiooutput &&

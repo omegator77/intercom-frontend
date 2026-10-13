@@ -5,38 +5,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { releaseGainControl } from "./audio-gain-control.ts";
-import { trace } from "./audio-debug-panel.ts";
-
-let hookCounter = 0;
 
 export const useAudioElements = () => {
-  const [audioElements, setAudioElementsRaw] = useState<HTMLAudioElement[]>([]);
+  const [audioElements, setAudioElements] = useState<HTMLAudioElement[]>([]);
   const audioElementsRef = useRef<HTMLAudioElement[]>(audioElements);
-  const idRef = useRef(0);
-  if (idRef.current === 0) {
-    hookCounter += 1;
-    idRef.current = hookCounter;
-  }
-  const id = idRef.current;
-
-  const setAudioElements: typeof setAudioElementsRaw = useCallback(
-    (update) => {
-      trace(`hook #${id}: setAudioElements called`);
-      setAudioElementsRaw(update);
-    },
-    [id]
-  );
-
-  useEffect(() => {
-    trace(`hook #${id}: mounted`);
-    return () => trace(`hook #${id}: UNMOUNTED`);
-  }, [id]);
 
   // Keep ref in sync with state so cleanup always uses latest array
   useEffect(() => {
     audioElementsRef.current = audioElements;
-    trace(`hook #${id}: state holds ${audioElements.length} element(s)`);
-  }, [audioElements, id]);
+  }, [audioElements]);
 
   const cleanUpAudio = useCallback(() => {
     audioElementsRef.current.forEach((el) => {
