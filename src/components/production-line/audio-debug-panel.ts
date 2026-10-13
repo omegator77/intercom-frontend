@@ -119,12 +119,12 @@ export const showAudioDebug = (
       `element's silent clone: ${silentTrack ? `enabled=${silentTrack.enabled}` : "none"}`,
       `audio elements created in this page: ${createdElements.length} (the panel controls belong to the LAST one)`,
       ...createdElements.map((el, i) => {
-        const c = getGainControl(el);
+        const ctl = getGainControl(el);
         return (
-          `#${i + 1}${el === element ? "*" : " "} app set volume x${c?.stats.volumeSets ?? "-"} ` +
-          `(last ${c?.stats.lastVolume ?? "-"}) muted x${c?.stats.mutedSets ?? "-"} ` +
-          `(last ${c?.stats.lastMuted ?? "-"}) gain=${c?.gain.gain.value ?? "-"} ` +
-          `ctx=${c?.ctx.state ?? "-"} paused=${el.paused}`
+          `#${i + 1}${el === element ? "*" : " "} app set volume x${ctl?.stats.volumeSets ?? "-"} ` +
+          `(last ${ctl?.stats.lastVolume ?? "-"}) muted x${ctl?.stats.mutedSets ?? "-"} ` +
+          `(last ${ctl?.stats.lastMuted ?? "-"}) gain=${ctl?.gain.gain.value ?? "-"} ` +
+          `ctx=${ctl?.ctx.state ?? "-"} paused=${el.paused}`
         );
       }),
     ].join("\n");
