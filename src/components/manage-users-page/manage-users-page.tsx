@@ -4,7 +4,10 @@ import styled from "@emotion/styled";
 import { useAuth } from "../../auth/use-auth";
 import { API, TUserListInfo } from "../../api/api";
 import { PageHeader } from "../page-layout/page-header";
-import { StyledWarningMessage } from "../form-elements/form-elements";
+import {
+  SecondaryButton,
+  StyledWarningMessage,
+} from "../form-elements/form-elements";
 import { DeleteButton } from "../delete-button/delete-button-components";
 import { ConfirmationModal } from "../verify-decision/confirmation-modal";
 import { DisplayContainer } from "../generic-components";
@@ -42,13 +45,21 @@ const MembershipCount = styled.span`
   min-width: 10rem;
 `;
 
+const SuperAdminBadge = styled.span`
+  padding: 0.2rem 0.8rem;
+  border-radius: 1rem;
+  background: rgba(89, 203, 232, 0.2);
+  color: #59cbe8;
+  font-size: 1.2rem;
+  white-space: nowrap;
+`;
+
 export const ManageUsersPage = () => {
-  const { isSuperAdmin, loading: authLoading } = useAuth();
+  const { isSuperAdmin, me, loading: authLoading } = useAuth();
   const [users, setUsers] = useState<TUserListInfo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [removeTarget, setRemoveTarget] = useState<TUserListInfo | null>(
-    null
-  );
+  const [removeTarget, setRemoveTarget] = useState<TUserListInfo | null>(null);
+  const [roleTarget, setRoleTarget] = useState<TUserListInfo | null>(null);
 
   const loadUsers = async () => {
     setError(null);
@@ -74,6 +85,19 @@ export const ManageUsersPage = () => {
     }
   };
 
+  const changeSuperAdmin = async (user: TUserListInfo) => {
+    try {
+      await API.setUserSuperAdmin(user.userId, !user.isSuperAdmin);
+      setRoleTarget(null);
+      await loadUsers();
+    } catch (err) {
+      setRoleTarget(null);
+      setError(
+        err instanceof Error ? err.message : "Failed to change super admin role"
+      );
+    }
+  };
+
   if (!authLoading && !isSuperAdmin) {
     return <Navigate to="/" replace />;
   }
@@ -96,6 +120,17 @@ export const ManageUsersPage = () => {
                     user.membershipCount === 1 ? "" : "s"
                   }`}
             </MembershipCount>
+            {user.isSuperAdmin && (
+              <SuperAdminBadge>Super admin</SuperAdminBadge>
+            )}
+            {user.userId !== me?.user.id && (
+              <SecondaryButton
+                type="button"
+                onClick={() => setRoleTarget(user)}
+              >
+                {user.isSuperAdmin ? "Remove super admin" : "Make super admin"}
+              </SecondaryButton>
+            )}
             <DeleteButton
               type="button"
               disabled={user.membershipCount > 0}
@@ -111,6 +146,20 @@ export const ManageUsersPage = () => {
           </UserRow>
         ))}
       </List>
+      {roleTarget && (
+        <ConfirmationModal
+          title={
+            roleTarget.isSuperAdmin ? "Remove super admin" : "Make super admin"
+          }
+          description={
+            roleTarget.isSuperAdmin
+              ? `Remove the super admin role from "${roleTarget.username}"? They keep only their own production memberships.`
+              : `Make "${roleTarget.username}" a super admin? They get access to every production, can create productions and manage all users.`
+          }
+          onCancel={() => setRoleTarget(null)}
+          onConfirm={() => changeSuperAdmin(roleTarget)}
+        />
+      )}
       {removeTarget && (
         <ConfirmationModal
           title="Delete user"

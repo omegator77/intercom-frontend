@@ -464,6 +464,18 @@ export const API = {
         credentials: "include",
       })
     ),
+  setUserSuperAdmin: (
+    userId: string,
+    isSuperAdmin: boolean
+  ): Promise<TUserListInfo> =>
+    handleFetchRequest<TUserListInfo>(
+      fetch(`${API_URL}users/${userId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isSuperAdmin }),
+      })
+    ),
   deleteUser: (userId: string): Promise<string> =>
     handleFetchRequest<string>(
       fetch(`${API_URL}users/${userId}`, {
